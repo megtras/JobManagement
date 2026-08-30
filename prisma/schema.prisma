@@ -1,0 +1,454 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  SUPERVISOR
+  MANAGER
+  ADMIN
+  TECHNICIAN
+}
+
+enum TechnicianStatus {
+  AVAILABLE
+  WORKING
+  IN_PROGRESS
+  ON_LEAVE
+}
+
+enum CustomerStatus {
+  PENDING
+  CLOSED
+}
+
+enum CustomerType {
+  CORPORATE
+  END_USER
+}
+
+enum PropertyType {
+  CONDO
+  LANDED
+  OFFICE
+  FACTORY
+  OTHERS
+}
+
+enum AppointmentStatus {
+  COMING_SOON
+  IN_PROGRESS
+  DONE
+}
+
+enum BillingType {
+  CHARGEABLE
+  WARRANTY
+}
+
+enum PaymentMethod {
+  CASH
+  QR_TRANSFER
+  OFFICE
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ServicePhotoType {
+  ATTENDANCE
+  EVIDENCE
+}
+
+enum ReportStatus {
+  DONE
+}
+
+enum WebsiteLeadStatus {
+  NEW_ENQUIRY
+  CONTACTED
+  QUALIFIED
+  QUOTATION_SENT
+  APPOINTMENT_CONFIRMED
+  CONVERTED_TO_JOB
+  JOB_COMPLETED
+  CLOSED
+}
+
+enum WebsiteLeadMethod {
+  BOOKING_FORM
+  QUOTATION_FORM
+  CONTACT_FORM
+  WHATSAPP
+  PHONE
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  address   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users        User[]
+  customers    Customer[]
+  appointments Appointment[]
+  teams        Team[]
+}
+
+model User {
+  id               String            @id @default(cuid())
+  staffNo          Int               @unique @default(autoincrement())
+  name             String
+  email            String            @unique
+  passwordHash     String
+  role             Role
+  position         String?
+  identificationNo String?
+  branchId         String?
+  phone            String?
+  technicianStatus TechnicianStatus?
+  lastLocationLat  Float?
+  lastLocationLng  Float?
+  lastLocationArea String?
+  lastLocationAddress String?
+  lastLocationAt   DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  branch           Branch?       @relation(fields: [branchId], references: [id])
+  teams            Team[]        @relation("TeamMembers")
+  appointments     Appointment[] @relation("TechnicianAppointments")
+  checkIns         CheckIn[]
+  notifications    Notification[]
+  approvedPayments Payment[]     @relation("ApprovedPayments")
+  checkInSosRequests Appointment[] @relation("AppointmentCheckInSosRequester")
+  checkInSosApprovals Appointment[] @relation("AppointmentCheckInSosResolver")
+
+  @@index([branchId])
+  @@index([role])
+  @@index([lastLocationAt])
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  branchId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branch       Branch        @relation(fields: [branchId], references: [id])
+  members      User[]        @relation("TeamMembers")
+  appointments Appointment[] @relation("AppointmentTeams")
+
+  @@index([branchId])
+}
+
+model JobCategory {
+  id        String   @id @default(cuid())
+  name      String
+  price     Decimal  @db.Decimal(10, 2)
+  minEvidencePhotos Int @default(3)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customers    Customer[]
+  appointments Appointment[]
+  assets       AppointmentAsset[]
+}
+
+model Customer {
+  id            String         @id @default(cuid())
+  custNo        Int            @unique @default(autoincrement())
+  name          String
+  custType      CustomerType   @default(END_USER)
+  phone         String
+  phone2        String?
+  email         String?
+  area          String
+  propertyType  PropertyType   @default(OTHERS)
+  jobCategoryId String?
+  branchId      String
+  status        CustomerStatus @default(PENDING)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  branch       Branch            @relation(fields: [branchId], references: [id])
+  jobCategory  JobCategory?      @relation(fields: [jobCategoryId], references: [id])
+  addresses    CustomerAddress[]
+  appointments Appointment[]
+  websiteLeads WebsiteLead[]
+
+  @@index([branchId])
+  @@index([status])
+  @@index([jobCategoryId])
+}
+
+model CustomerAddress {
+  id         String   @id @default(cuid())
+  customerId String
+  address    String
+  lat        Float?
+  lng        Float?
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+}
+
+model Appointment {
+  id               String            @id @default(cuid())
+  jobNo            Int               @unique @default(autoincrement())
+  customerId       String
+  branchId         String
+  jobCategoryId    String?
+  jobTitle         String            @default("")
+  date             DateTime
+  time             String
+  timeFinish       String            @default("")
+  locationAddress  String            @default("")
+  locationLat      Float?
+  locationLng      Float?
+  locationWazeLink String            @default("")
+  technicianId     String?
+  parentId         String?
+  status           AppointmentStatus @default(COMING_SOON)
+  billingType      BillingType        @default(CHARGEABLE)
+  warrantyNote     String?
+  totalPrice       Decimal           @db.Decimal(10, 2)
+  commission       Decimal?          @db.Decimal(10, 2)
+  approvedAt       DateTime?
+  approvedById     String?
+  clockInAt        DateTime?         // set when the technician taps Start Task
+  clockOutAt       DateTime?         // set when the technician taps Checkout
+  urgent           Boolean           @default(false) // technician flagged this for manager attention
+  urgentReason     String?           // why it was flagged urgent
+  urgentAt         DateTime?         // when it was flagged
+  checkInSosRequestedAt DateTime?
+  checkInSosRequestedById String?
+  checkInSosAddress String?
+  checkInSosLat Float?
+  checkInSosLng Float?
+  checkInSosResolvedAt DateTime?
+  checkInSosResolvedById String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  customer      Customer           @relation(fields: [customerId], references: [id])
+  branch        Branch             @relation(fields: [branchId], references: [id])
+  jobCategory   JobCategory?       @relation(fields: [jobCategoryId], references: [id])
+  technician    User?              @relation("TechnicianAppointments", fields: [technicianId], references: [id])
+  checkInSosRequester User?        @relation("AppointmentCheckInSosRequester", fields: [checkInSosRequestedById], references: [id])
+  checkInSosResolver  User?        @relation("AppointmentCheckInSosResolver", fields: [checkInSosResolvedById], references: [id])
+  teams         Team[]             @relation("AppointmentTeams")
+  parent        Appointment?       @relation("SubJobs", fields: [parentId], references: [id])
+  subJobs       Appointment[]      @relation("SubJobs")
+  assets        AppointmentAsset[]
+  payments      Payment[]
+  servicePhotos ServicePhoto[]
+  checkIns      CheckIn[]
+  report        Report?
+  notifications Notification[]
+  websiteLeads WebsiteLead[]
+
+  @@index([branchId])
+  @@index([status])
+  @@index([billingType])
+  @@index([date])
+  @@index([technicianId])
+  @@index([customerId])
+  @@index([parentId])
+  @@index([checkInSosRequestedAt])
+  @@index([checkInSosResolvedAt])
+  @@index([checkInSosRequestedById])
+  @@index([checkInSosResolvedById])
+}
+
+model AppointmentAsset {
+  id                  String  @id @default(cuid())
+  appointmentId       String
+  label               String
+  acType              String  @default("")
+  jobCategoryId       String?
+  unitPrice           Decimal @db.Decimal(10, 2) @default(0)
+  billingType         BillingType @default(CHARGEABLE)
+  isTroubleshoot      Boolean @default(false)
+  remarks             String?
+  technicianRemark    String?
+  additionalAddress   String?
+  propertyType        String  @default("")
+  workLocationAddress String  @default("")
+  workLocationLat     Float?
+  workLocationLng     Float?
+
+  appointment   Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  jobCategory   JobCategory?   @relation(fields: [jobCategoryId], references: [id])
+  servicePhotos ServicePhoto[]
+
+  @@index([appointmentId])
+  @@index([jobCategoryId])
+  @@index([billingType])
+  @@index([isTroubleshoot])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  appointmentId   String
+  method          PaymentMethod
+  amount          Decimal       @db.Decimal(10, 2)
+  receiptPhotoUrl String?
+  status          PaymentStatus @default(PENDING)
+  rejectReason    String?
+  approvedById    String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+  approvedBy  User?       @relation("ApprovedPayments", fields: [approvedById], references: [id])
+
+  @@index([appointmentId])
+  @@index([status])
+}
+
+model ServicePhoto {
+  id            String           @id @default(cuid())
+  appointmentId String
+  assetId       String?
+  photoUrl      String
+  label         String           @default("")
+  type          ServicePhotoType
+  createdAt     DateTime         @default(now())
+
+  appointment Appointment       @relation(fields: [appointmentId], references: [id])
+  asset       AppointmentAsset? @relation(fields: [assetId], references: [id])
+
+  @@index([appointmentId])
+  @@index([type])
+}
+
+model CheckIn {
+  id            String   @id @default(cuid())
+  appointmentId String
+  technicianId  String
+  lat           Float
+  lng           Float
+  source        String   @default("GPS")
+  approvedById  String?
+  checkedInAt   DateTime @default(now())
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+  technician  User        @relation(fields: [technicianId], references: [id])
+
+  @@index([appointmentId])
+  @@index([technicianId])
+}
+
+model Report {
+  id                  String       @id @default(cuid())
+  appointmentId       String       @unique
+  technicianName      String
+  technicianSignature String
+  clientName          String
+  clientSignature     String
+  reportDate          DateTime
+  pdfUrl              String?
+  status              ReportStatus @default(DONE)
+  createdAt           DateTime     @default(now())
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id])
+}
+
+model Notification {
+  id                   String   @id @default(cuid())
+  userId               String
+  type                 String
+  message              String
+  relatedAppointmentId String?
+  isRead               Boolean  @default(false)
+  createdAt            DateTime @default(now())
+
+  user               User         @relation(fields: [userId], references: [id])
+  relatedAppointment Appointment? @relation(fields: [relatedAppointmentId], references: [id])
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([relatedAppointmentId])
+}
+
+model WebsiteLead {
+  id                String            @id @default(cuid())
+  leadNo            Int               @unique @default(autoincrement())
+  status            WebsiteLeadStatus @default(NEW_ENQUIRY)
+  conversionMethod  WebsiteLeadMethod @default(BOOKING_FORM)
+  name              String
+  phone             String
+  phoneNormalized   String
+  email             String?
+  serviceType       String
+  customerType      String
+  serviceArea       String
+  propertyType      String
+  unitQuantityRange String
+  message           String?
+  websiteLanguage   String            @default("ms")
+  leadSource        String            @default("direct")
+  firstLandingPage  String?
+  latestLandingPage String?
+  referrer          String?
+  utmSource         String?
+  utmMedium         String?
+  utmCampaign       String?
+  utmContent        String?
+  utmTerm           String?
+  gclid             String?
+  gbraid            String?
+  wbraid            String?
+  analyticsConsent  Boolean           @default(false)
+  advertisingConsent Boolean          @default(false)
+  customerId        String?
+  appointmentId     String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  messages    WebsiteLeadMessage[]
+
+  @@index([status])
+  @@index([phoneNormalized])
+  @@index([leadSource])
+  @@index([utmCampaign])
+  @@index([serviceType])
+  @@index([serviceArea])
+  @@index([createdAt])
+  @@index([customerId])
+  @@index([appointmentId])
+}
+
+model WebsiteLeadMessage {
+  id                String      @id @default(cuid())
+  websiteLeadId     String
+  externalMessageId String      @unique
+  channel           String      @default("whatsapp")
+  direction         String      @default("inbound")
+  messageType       String
+  content           String?
+  receivedAt        DateTime
+  createdAt         DateTime    @default(now())
+
+  websiteLead WebsiteLead @relation(fields: [websiteLeadId], references: [id], onDelete: Cascade)
+
+  @@index([websiteLeadId, receivedAt])
+}

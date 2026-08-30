@@ -1,0 +1,31 @@
+{
+  "name": "GenPlus Aircond",
+  "short_name": "GenPlus",
+  "id": "/login",
+  "description": "Job Scheduling Management System",
+  "start_url": "/app/tasks",
+  "scope": "/app/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f8fafc",
+  "theme_color": "#0A857D",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/genplus-app-192-v2.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/genplus-app-512-v2.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/genplus-app-maskable-512-v2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

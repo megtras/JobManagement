@@ -1,0 +1,21 @@
+services:
+  database:
+    image: postgres:17-alpine
+    container_name: megtras-job-management-demo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: megtras_job_management_demo
+      POSTGRES_USER: megtras_demo
+      POSTGRES_PASSWORD: megtras_demo_local_only
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - megtras-demo-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U megtras_demo -d megtras_job_management_demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  megtras-demo-postgres:

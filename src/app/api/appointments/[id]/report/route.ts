@@ -1,0 +1,165 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { regenerateServiceReportPdf } from "@/lib/pdf/regenerate-service-report";
+
+const REPORT_EDITOR_ROLES = new Set(["ADMIN", "MANAGER", "SUPERVISOR"]);
+
+interface ReportEditBody {
+  technicianName?: unknown;
+  clientName?: unknown;
+  reportDate?: unknown;
+  assets?: unknown;
+  photos?: unknown;
+}
+
+function requiredText(value: unknown, field: string, maxLength = 120) {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`${field} is required.`);
+  }
+  const text = value.trim();
+  if (text.length > maxLength) throw new Error(`${field} is too long.`);
+  return text;
+}
+
+function optionalText(value: unknown, field: string, maxLength: number) {
+  if (typeof value !== "string") throw new Error(`${field} must be text.`);
+  const text = value.trim();
+  if (text.length > maxLength) throw new Error(`${field} is too long.`);
+  return text;
+}
+
+function parseReportDate(value: unknown) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error("Report date is invalid.");
+  }
+  const date = new Date(`${value}T12:00:00.000Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    throw new Error("Report date is invalid.");
+  }
+  return date;
+}
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!REPORT_EDITOR_ROLES.has(session.user.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { role, branchId } = session.user;
+  const appt = await prisma.appointment.findFirst({
+    where: {
+      id,
+      ...(role !== "SUPERVISOR" && branchId ? { branchId } : {}),
+    },
+    select: {
+      id: true,
+      status: true,
+      report: { select: { pdfUrl: true } },
+      assets: { select: { id: true } },
+      servicePhotos: { select: { id: true, type: true } },
+    },
+  });
+
+  if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (appt.status !== "DONE" || !appt.report) {
+    return NextResponse.json({ error: "Only completed reports can be edited." }, { status: 409 });
+  }
+
+  let body: ReportEditBody;
+  try {
+    body = await req.json() as ReportEditBody;
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  try {
+    const technicianName = requiredText(body.technicianName, "Technician name");
+    const clientName = requiredText(body.clientName, "Client name");
+    const reportDate = parseReportDate(body.reportDate);
+    const rawAssets = Array.isArray(body.assets) ? body.assets : [];
+    const rawPhotos = Array.isArray(body.photos) ? body.photos : [];
+
+    if (rawAssets.length > 200 || rawPhotos.length > 500) {
+      throw new Error("Too many report items.");
+    }
+
+    const allowedAssetIds = new Set(appt.assets.map((asset) => asset.id));
+    const allowedPhotoIds = new Set(
+      appt.servicePhotos.filter((photo) => photo.type === "EVIDENCE").map((photo) => photo.id),
+    );
+    const seenAssetIds = new Set<string>();
+    const seenPhotoIds = new Set<string>();
+
+    const assets = rawAssets.map((item) => {
+      if (!item || typeof item !== "object") throw new Error("Invalid asset report item.");
+      const value = item as { id?: unknown; technicianRemark?: unknown };
+      const assetId = requiredText(value.id, "Asset id", 100);
+      if (!allowedAssetIds.has(assetId) || seenAssetIds.has(assetId)) {
+        throw new Error("Invalid asset report item.");
+      }
+      seenAssetIds.add(assetId);
+      return {
+        id: assetId,
+        technicianRemark: optionalText(value.technicianRemark ?? "", "Technician remark", 4000),
+      };
+    });
+
+    const photos = rawPhotos.map((item) => {
+      if (!item || typeof item !== "object") throw new Error("Invalid report photo.");
+      const value = item as { id?: unknown; label?: unknown };
+      const photoId = requiredText(value.id, "Photo id", 100);
+      if (!allowedPhotoIds.has(photoId) || seenPhotoIds.has(photoId)) {
+        throw new Error("Invalid report photo.");
+      }
+      seenPhotoIds.add(photoId);
+      return {
+        id: photoId,
+        label: optionalText(value.label ?? "", "Photo name", 160),
+      };
+    });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.report.update({
+        where: { appointmentId: id },
+        data: { technicianName, clientName, reportDate },
+      });
+      for (const asset of assets) {
+        await tx.appointmentAsset.update({
+          where: { id: asset.id },
+          data: { technicianRemark: asset.technicianRemark || null },
+        });
+      }
+      for (const photo of photos) {
+        await tx.servicePhoto.update({
+          where: { id: photo.id },
+          data: { label: photo.label },
+        });
+      }
+    });
+
+    let pdfUrl = appt.report.pdfUrl;
+    let warning: string | undefined;
+    try {
+      pdfUrl = await regenerateServiceReportPdf(id);
+    } catch (error) {
+      console.error("Could not regenerate edited service report:", error);
+      warning = "Report was saved, but the PDF could not be refreshed. Please try again.";
+    }
+
+    return NextResponse.json({
+      ok: true,
+      report: { technicianName, clientName, reportDate: reportDate.toISOString(), pdfUrl },
+      warning,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not update report.";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
