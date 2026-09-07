@@ -125,24 +125,22 @@ export async function PATCH(
       };
     });
 
-    await prisma.$transaction(async (tx) => {
-      await tx.report.update({
-        where: { appointmentId: id },
-        data: { technicianName, clientName, reportDate },
-      });
-      for (const asset of assets) {
-        await tx.appointmentAsset.update({
-          where: { id: asset.id },
-          data: { technicianRemark: asset.technicianRemark || null },
-        });
-      }
-      for (const photo of photos) {
-        await tx.servicePhoto.update({
-          where: { id: photo.id },
-          data: { label: photo.label },
-        });
-      }
+    await prisma.report.update({
+      where: { appointmentId: id },
+      data: { technicianName, clientName, reportDate },
     });
+    for (const asset of assets) {
+      await prisma.appointmentAsset.update({
+        where: { id: asset.id },
+        data: { technicianRemark: asset.technicianRemark || null },
+      });
+    }
+    for (const photo of photos) {
+      await prisma.servicePhoto.update({
+        where: { id: photo.id },
+        data: { label: photo.label },
+      });
+    }
 
     let pdfUrl = appt.report.pdfUrl;
     let warning: string | undefined;

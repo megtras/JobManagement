@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { LogOut } from "lucide-react";
-import { GenPlusLogo } from "@/components/brand/GenPlusLogo";
+import { MegtrasLogo } from "@/components/brand/MegtrasLogo";
 import { NotificationBell } from "./NotificationBell";
 import { NAV_ITEMS } from "./navConfig";
 import { BranchScopeSelector } from "./BranchScopeProvider";
@@ -41,17 +41,17 @@ export function Sidebar() {
 
   return (
     <aside
-      className="hidden lg:flex flex-col w-64 min-h-screen text-white fixed top-0 left-0 z-30 overflow-hidden"
+      className="hidden lg:flex flex-col w-64 min-h-screen text-white fixed top-0 left-0 z-30 overflow-hidden border-r border-[#2A2925]"
       style={{
         background:
-          "radial-gradient(circle at -16% 58%, #1ea89bcc 0%, #1ea89b8f 30%, #1ea89b40 55%, transparent 78%), radial-gradient(circle at 52% 88%, #1ea89b80 0%, #1ea89b36 44%, transparent 68%), linear-gradient(180deg, #092326 0%, #031011 100%)",
+          "linear-gradient(180deg, #1A1917 0%, #121110 55%, #0D0C0B 100%)",
       }}
     >
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "linear-gradient(180deg, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.18) 52%, rgba(0, 0, 0, 0.52) 100%)",
+            "radial-gradient(120% 60% at 50% 0%, rgba(255, 255, 255, 0.045) 0%, transparent 60%), linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.28) 100%)",
         }}
       />
 
@@ -59,9 +59,9 @@ export function Sidebar() {
         {/* Logo */}
         <div className="px-4 py-5">
           <div className="flex items-center justify-center rounded-2xl bg-white px-4 py-3.5 shadow-sm">
-            <GenPlusLogo className="h-10 w-auto" />
+            <MegtrasLogo className="h-10 w-auto" />
           </div>
-          <p className="mt-3 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1ea89b]">
+          <p className="mt-3 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8A8375]">
             Job Management
           </p>
         </div>
@@ -79,8 +79,8 @@ export function Sidebar() {
                 href={item.href}
                 className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                   active
-                    ? "bg-[#1ea89b] text-white shadow-sm"
-                    : "text-neutral-300 hover:bg-[#1ea89b]/10 hover:text-white"
+                    ? "bg-[#F2B705] text-[#151513] shadow-[0_2px_12px_rgba(242,183,5,0.22)]"
+                    : "text-[#C9C3B6] hover:bg-white/[0.06] hover:text-[#F2EFE7]"
                 }`}
               >
                 <Icon className="w-4.5 h-4.5 shrink-0" />
@@ -93,19 +93,19 @@ export function Sidebar() {
         <BranchScopeSelector />
 
         {/* Footer: user + signout */}
-        <div className="border-t border-[#12363a] px-3 py-4 space-y-1">
+        <div className="border-t border-[#2A2925] px-3 py-4 space-y-1">
           {/* Notification link with unread badge */}
           <NotificationBell
             showLabel
-            className="px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-300 hover:bg-[#1ea89b]/10 hover:text-white transition-colors"
+            className="px-3 py-2.5 rounded-xl text-sm font-medium text-[#C9C3B6] hover:bg-white/[0.06] hover:text-[#F2EFE7] transition-colors"
           />
 
           {/* User info */}
           <div className="px-3 py-2">
-            <p className="text-sm font-semibold text-white truncate">
+            <p className="text-sm font-semibold text-[#F2EFE7] truncate">
               {displayName}
             </p>
-            <p className="text-xs font-medium text-[#1ea89b]">
+            <p className="text-xs font-medium text-[#F2B705]">
               {displayRole}
             </p>
           </div>
@@ -113,7 +113,7 @@ export function Sidebar() {
           {/* Sign out */}
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-neutral-300 hover:bg-red-600 hover:text-white transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-[#C9C3B6] hover:bg-red-600 hover:text-white transition-colors"
           >
             <LogOut className="w-4.5 h-4.5 shrink-0" />
             Sign Out

@@ -1,0 +1,2 @@
+NEXTJS_ENV=development
+NEXTAUTH_SECRET=replace-with-a-random-demo-only-secret

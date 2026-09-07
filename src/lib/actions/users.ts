@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import type { Role } from "@/generated/prisma/client";
+import { nextStaffNo } from "@/lib/record-numbers";
 
 /** Any non-technician staff member (Supervisor / Manager / Admin). */
 async function getStaffSession() {
@@ -59,9 +60,11 @@ export async function createUser(data: {
   if (existing) throw new Error("This email address is already in use.");
 
   const passwordHash = await bcrypt.hash(data.password, 12);
+  const staffNo = await nextStaffNo();
 
   await prisma.user.create({
     data: {
+      staffNo,
       name: data.name.trim(),
       email: data.email.toLowerCase().trim(),
       passwordHash,

@@ -27,7 +27,7 @@ const TYPE_CONFIG: Record<string, { icon: React.ElementType; color: string }> = 
   URGENT_TASK:       { icon: AlertTriangle, color: "text-red-600"   },
   SOS_CHECKIN:       { icon: AlertTriangle, color: "text-red-600"   },
   OVERDUE_TASK:      { icon: AlertTriangle, color: "text-amber-600" },
-  SERVICE_DUE:       { icon: CalendarClock, color: "text-teal-600"  },
+  SERVICE_DUE:       { icon: CalendarClock, color: "text-[#151513]"  },
 };
 
 function timeAgo(dateStr: string) {
@@ -62,7 +62,7 @@ export function NotificationsClient({ role }: { role: string }) {
     try {
       const res = await fetch("/api/notifications");
       if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
+      const data = await res.json() as { notifications: NotificationItem[] };
       setItems(data.notifications);
       setError("");
     } catch {

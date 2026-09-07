@@ -14,7 +14,7 @@ test("demo report share links use the isolated local app origin", () => {
   assert.match(helperSource, /process\.env\.NEXT_PUBLIC_APP_URL/);
   assert.match(helperSource, /request\?\.headers\.get\("x-forwarded-host"\)/);
   assert.match(helperSource, /normalizeUploadUrl\(pdfUrl\)/);
-  assert.match(helperSource, /Service report from GenPlus Aircond/);
+  assert.match(helperSource, /Service report from Megtras/);
 
   assert.doesNotMatch(taskReportRouteSource, /http:\/\/localhost:3000/);
   assert.doesNotMatch(regenerateRouteSource, /http:\/\/localhost:3000/);

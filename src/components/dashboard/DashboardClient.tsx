@@ -353,7 +353,7 @@ export function DashboardClient({ userName, isSupervisor }: {
     try {
       const restoreScroll = preserveWindowScroll();
       const res = await fetch(`/api/payments/${paymentId}/toggle`, { method: "POST" });
-      const result = await res.json();
+      const result = await res.json() as { error?: string };
       if (!res.ok) throw new Error(result.error ?? "Toggle failed");
       await fetchData(period, dateParam, selectedTeam, { silent: true });
       restoreScroll();
@@ -371,7 +371,7 @@ export function DashboardClient({ userName, isSupervisor }: {
     try {
       const restoreScroll = preserveWindowScroll();
       const res = await fetch(`/api/appointments/${id}/approve`, { method: "POST" });
-      const result = await res.json();
+      const result = await res.json() as { error?: string };
       if (!res.ok) throw new Error(result.error ?? "Approve failed");
       await fetchData(period, dateParam, selectedTeam, { silent: true });
       restoreScroll();
@@ -554,15 +554,15 @@ export function DashboardClient({ userName, isSupervisor }: {
 
       {statServiceDueCount > 0 ? (
         <Link href="/customers?serviceDue=1"
-          className="mb-3 flex items-center gap-3 rounded-xl border border-teal-200 bg-teal-50 p-4 transition hover:border-teal-300 hover:bg-teal-100/60">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-teal-100 text-teal-700">
+          className="mb-3 flex items-center gap-3 rounded-xl border border-[#F2B705]/40 bg-[#F2B705]/10 p-4 transition hover:border-[#F2B705]/60 hover:bg-[#F2B705]/20/60">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-[#F2B705]/20 text-[#151513]">
             <CalendarClock className="w-4.5 h-4.5" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs text-teal-700">Service Due</p>
-            <p className="text-xl font-bold leading-tight text-teal-800">{statServiceDueCount}</p>
+            <p className="text-xs text-[#151513]">Service Due</p>
+            <p className="text-xl font-bold leading-tight text-[#151513]">{statServiceDueCount}</p>
           </div>
-          <p className="ml-auto hidden text-xs font-medium text-teal-700 sm:block">Customers due for follow-up</p>
+          <p className="ml-auto hidden text-xs font-medium text-[#151513] sm:block">Customers due for follow-up</p>
         </Link>
       ) : (
         <div className="mb-3 flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-4">
@@ -821,7 +821,7 @@ export function DashboardClient({ userName, isSupervisor }: {
                 ["ALL", "All"], ["COMING_SOON", "Pending"], ["IN_PROGRESS", "In Progress"], ["DONE", "Completed"],
               ] as const).map(([value, label]) => (
                 <button key={value} onClick={() => setJobStatusFilter(value)}
-                  className={`px-2.5 sm:px-3 py-2 font-medium whitespace-nowrap transition ${jobStatusFilter === value ? "bg-[#28a89d] text-white" : "text-gray-600 hover:bg-gray-50"} ${value !== "ALL" ? "border-l border-gray-200" : ""}`}>
+                  className={`px-2.5 sm:px-3 py-2 font-medium whitespace-nowrap transition ${jobStatusFilter === value ? "bg-[#151513] text-white" : "text-gray-600 hover:bg-gray-50"} ${value !== "ALL" ? "border-l border-gray-200" : ""}`}>
                   {label}
                 </button>
               ))}
@@ -845,8 +845,8 @@ export function DashboardClient({ userName, isSupervisor }: {
                   onClick={() => setPaymentMethodFilter(value)}
                   className={`flex-1 whitespace-nowrap px-2.5 py-2 font-medium transition sm:flex-none sm:px-3 ${
                     paymentMethodFilter === value
-                      ? "bg-[#0f766e] text-white"
-                      : "text-gray-600 hover:bg-teal-50 hover:text-teal-800"
+                      ? "bg-[#151513] text-white"
+                      : "text-gray-600 hover:bg-[#F2B705]/10 hover:text-[#151513]"
                   } ${value !== "ALL" ? "border-l border-gray-200" : ""}`}
                 >
                   {label}
@@ -960,7 +960,7 @@ export function DashboardClient({ userName, isSupervisor }: {
                     </td>
                     {/* Type of Payment */}
                     <td className="px-2 py-2.5 text-gray-600 whitespace-nowrap">
-                      {warranty ? <span className="font-medium text-teal-700">Warranty</span> : row.payment ? (PAYMENT_METHOD_LABEL[row.payment.method] ?? row.payment.method) : "-"}
+                      {warranty ? <span className="font-medium text-[#151513]">Warranty</span> : row.payment ? (PAYMENT_METHOD_LABEL[row.payment.method] ?? row.payment.method) : "-"}
                     </td>
                     {/* POP proof of payment */}
                     <td className="px-2 py-2.5 text-center whitespace-nowrap hidden 2xl:table-cell">
@@ -997,7 +997,7 @@ export function DashboardClient({ userName, isSupervisor }: {
                     {/* Payment Status Yes/No toggle */}
                     <td className="px-2 py-2.5 whitespace-nowrap text-center hidden 2xl:table-cell">
                       {warranty ? (
-                        <span className="inline-flex rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">Not Required</span>
+                        <span className="inline-flex rounded-full bg-[#F2B705]/10 px-2.5 py-1 text-xs font-semibold text-[#151513]">Not Required</span>
                       ) : row.payment ? (
                         <span className="inline-flex rounded-full border border-gray-200 overflow-hidden text-xs font-semibold select-none">
                           <button
@@ -1069,7 +1069,7 @@ export function DashboardClient({ userName, isSupervisor }: {
                     <RecordMeta label="Technician" value={row.technician?.name ?? <span className="text-gray-300">-</span>} />
                     <RecordMeta label="Payment" value={
                       warranty ? (
-                        <span className="inline-flex rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">Warranty - Not Required</span>
+                        <span className="inline-flex rounded-full bg-[#F2B705]/10 px-2.5 py-1 text-xs font-semibold text-[#151513]">Warranty - Not Required</span>
                       ) : row.payment ? (
                         <span className="space-y-2">
                           <span className="block">{PAYMENT_METHOD_LABEL[row.payment.method] ?? row.payment.method}</span>

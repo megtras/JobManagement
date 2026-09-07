@@ -1,17 +1,14 @@
-import { Pool } from "pg";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { PrismaD1 } from "@prisma/adapter-d1";
 import { PrismaClient } from "@/generated/prisma/client";
-
-const PRISMA_SCHEMA_SIGNATURE = "websiteLead.pipeline+attribution+jobCategory.minEvidencePhotos+servicePhotoLabel+checkInSos+appointment.billingType+warrantyNote+asset.billingType+asset.isTroubleshoot";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
-  prismaSchemaSignature: string | undefined;
 };
 
 function createClient() {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  const adapter = new PrismaPg(pool);
+  const { env } = getCloudflareContext();
+  const adapter = new PrismaD1(env.DB);
   return new PrismaClient({
     adapter,
     log:
@@ -21,18 +18,17 @@ function createClient() {
   });
 }
 
-if (
-  process.env.NODE_ENV !== "production" &&
-  globalForPrisma.prisma &&
-  globalForPrisma.prismaSchemaSignature !== PRISMA_SCHEMA_SIGNATURE
-) {
-  globalForPrisma.prisma.$disconnect().catch(() => undefined);
-  globalForPrisma.prisma = undefined;
+function getClient() {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createClient();
+  }
+  return globalForPrisma.prisma;
 }
 
-export const prisma = globalForPrisma.prisma ?? createClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-  globalForPrisma.prismaSchemaSignature = PRISMA_SCHEMA_SIGNATURE;
-}
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, property) {
+    const client = getClient();
+    const value = Reflect.get(client, property, client);
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+});

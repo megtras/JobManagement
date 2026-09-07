@@ -15,24 +15,24 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "GenPlus Aircond",
-    startupImage: "/icons/genplus-app-512-v2.png",
+    title: "Megtras",
+    startupImage: "/icons/icon-512.png",
   },
   icons: {
     icon: [
       {
-        url: "/icons/genplus-favicon-16-v2.png",
+        url: "/icons/favicon-16.png",
         sizes: "16x16",
         type: "image/png",
       },
       {
-        url: "/icons/genplus-favicon-32-v2.png",
+        url: "/icons/favicon-32.png",
         sizes: "32x32",
         type: "image/png",
       },
     ],
-    shortcut: "/icons/genplus-favicon-32-v2.png",
-    apple: "/icons/genplus-apple-touch-v2.png",
+    shortcut: "/icons/favicon-32.png",
+    apple: "/icons/icon-180.png",
   },
 };
 
@@ -41,7 +41,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0A857D",
+  themeColor: "#151513",
 };
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

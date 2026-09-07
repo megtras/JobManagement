@@ -16,6 +16,8 @@
 # next.js
 /.next/
 /out/
+/.open-next/
+/.wrangler/
 
 # production
 /build
@@ -48,9 +50,16 @@ next-env.d.ts
 /public/uploads
 /demo-data
 /public/sw.js
+.dev.vars
 # Website photo source files are local working assets. Only optimized files
 # under public/website/photos are deployed.
 /assets/website/photos-original/*
 !/assets/website/photos-original/.gitkeep
 /assets/website/photos-edited/*
 !/assets/website/photos-edited/.gitkeep
+
+# Vendored Node toolchain (100MB, machine-local)
+/.tools/
+
+# Transient deploy logs
+deploy-error.log

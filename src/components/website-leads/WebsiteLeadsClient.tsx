@@ -77,7 +77,7 @@ const STATUS_CLASS: Record<WebsiteLeadStatus, string> = {
   QUALIFIED: "bg-violet-50 text-violet-700",
   QUOTATION_SENT: "bg-amber-50 text-amber-700",
   APPOINTMENT_CONFIRMED: "bg-indigo-50 text-indigo-700",
-  CONVERTED_TO_JOB: "bg-teal-50 text-teal-700",
+  CONVERTED_TO_JOB: "bg-[#F2B705]/10 text-[#151513]",
   JOB_COMPLETED: "bg-green-50 text-green-700",
   CLOSED: "bg-gray-100 text-gray-600",
 };
@@ -177,7 +177,7 @@ export function WebsiteLeadsClient({
   return (
     <div>
       <div className="mb-6 flex items-center gap-3">
-        <Target className="size-6 text-teal-600" />
+        <Target className="size-6 text-[#151513]" />
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Website Leads</h1>
           <p className="text-sm text-gray-500">
@@ -187,7 +187,7 @@ export function WebsiteLeadsClient({
       </div>
 
       {notice && (
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800">
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-[#F2B705]/40 bg-[#F2B705]/10 px-4 py-3 text-sm text-[#151513]">
           <span>{notice}</span>
           <button type="button" onClick={() => setNotice("")} aria-label="Dismiss">
             <X className="size-4" />
@@ -218,7 +218,7 @@ export function WebsiteLeadsClient({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search name, phone, service, area or campaign"
-            className="h-10 w-full rounded-md border border-gray-300 pl-9 pr-3 text-sm outline-none focus:border-teal-600"
+            className="h-10 w-full rounded-md border border-gray-300 pl-9 pr-3 text-sm outline-none focus:border-[#151513]"
           />
         </label>
         <select
@@ -226,7 +226,7 @@ export function WebsiteLeadsClient({
           onChange={(event) =>
             setStatus(event.target.value as WebsiteLeadStatus | "ALL")
           }
-          className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:border-teal-600"
+          className="h-10 rounded-md border border-gray-300 px-3 text-sm outline-none focus:border-[#151513]"
         >
           <option value="ALL">All statuses</option>
           {ALL_STATUSES.map((item) => (
@@ -262,7 +262,7 @@ export function WebsiteLeadsClient({
                 <td className="px-4 py-4">
                   <a
                     href={`tel:${lead.phone}`}
-                    className="flex items-center gap-1 font-medium text-teal-700"
+                    className="flex items-center gap-1 font-medium text-[#151513]"
                   >
                     <Phone className="size-3.5" />
                     {lead.phone}
@@ -333,7 +333,7 @@ export function WebsiteLeadsClient({
               </span>
             </div>
             <div className="mt-4 grid gap-2 text-sm text-gray-600">
-              <a href={`tel:${lead.phone}`} className="font-medium text-teal-700">
+              <a href={`tel:${lead.phone}`} className="font-medium text-[#151513]">
                 {lead.phone}
               </a>
               <p>
@@ -465,7 +465,7 @@ function LeadActions({
           onClick={onAddAppointment}
           aria-label={`Add appointment for ${lead.name}`}
           title="Add appointment"
-          className="grid size-9 place-items-center rounded-md text-teal-700 hover:bg-teal-50"
+          className="grid size-9 place-items-center rounded-md text-[#151513] hover:bg-[#F2B705]/10"
         >
           <CalendarPlus className="size-4" />
         </button>
@@ -503,7 +503,7 @@ function LeadDrawer({
       >
         <div className="flex items-start justify-between border-b border-gray-200 px-5 py-4">
           <div>
-            <p className="text-xs font-medium text-teal-700">
+            <p className="text-xs font-medium text-[#151513]">
               WL-{String(lead.leadNo).padStart(5, "0")}
             </p>
             <h2 className="mt-1 text-xl font-bold text-gray-900">{lead.name}</h2>
@@ -585,7 +585,7 @@ function LeadDrawer({
             <button
               type="button"
               onClick={onAddAppointment}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-teal-600 text-sm font-semibold text-white hover:bg-teal-700"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#151513] text-sm font-semibold text-white hover:bg-[#151513]"
             >
               <CalendarPlus className="size-4" /> Appointment
             </button>
@@ -593,7 +593,7 @@ function LeadDrawer({
             <button
               type="button"
               onClick={onAddCustomer}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-teal-600 text-sm font-semibold text-white hover:bg-teal-700"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#151513] text-sm font-semibold text-white hover:bg-[#151513]"
             >
               <UserPlus className="size-4" /> Add customer
             </button>
@@ -646,7 +646,7 @@ function Stat({
 }) {
   return (
     <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4">
-      <div className="grid size-10 place-items-center rounded-md bg-teal-50 text-teal-700">
+      <div className="grid size-10 place-items-center rounded-md bg-[#F2B705]/10 text-[#151513]">
         <Icon className="size-5" />
       </div>
       <div>
@@ -687,7 +687,7 @@ function whatsappUrl(lead: LeadRow) {
   if (!EXTERNAL_WHATSAPP_ENABLED) return "#";
   const phone = lead.phone.replace(/\D/g, "");
   const reference = `WL-${String(lead.leadNo).padStart(5, "0")}`;
-  const message = `Hi ${lead.name}, this is GenPlus Aircond following up on enquiry ${reference}.`;
+  const message = `Hi ${lead.name}, this is Megtras following up on enquiry ${reference}.`;
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
 

@@ -14,8 +14,8 @@ export async function PATCH(
   const { role, branchId } = session.user;
   if (role === "TECHNICIAN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { action, rejectReason } = await req.json();
-  if (!["APPROVE", "REJECT"].includes(action)) {
+  const { action, rejectReason } = await req.json() as { action?: string; rejectReason?: string };
+  if (!action || !["APPROVE", "REJECT"].includes(action)) {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
 

@@ -16,7 +16,14 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { lat, lng, targetLat, targetLng, checkedInAt, clientCheckInId } = await req.json();
+  const { lat, lng, targetLat, targetLng, checkedInAt, clientCheckInId } = await req.json() as {
+    lat?: number;
+    lng?: number;
+    targetLat?: number;
+    targetLng?: number;
+    checkedInAt?: string;
+    clientCheckInId?: string;
+  };
   if (typeof lat !== "number" || typeof lng !== "number") {
     return NextResponse.json({ error: "Invalid coordinates" }, { status: 400 });
   }

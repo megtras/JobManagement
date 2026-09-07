@@ -16,7 +16,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const body = await req.json();
+  const body = await req.json() as { commission?: unknown };
   const raw  = body.commission;
   const commission = raw === null || raw === "" || raw === undefined
     ? null

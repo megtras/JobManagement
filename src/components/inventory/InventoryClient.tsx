@@ -105,7 +105,7 @@ export function InventoryClient({ categories }: { categories: Category[] }) {
         </div>
         {!adding && (
           <button onClick={() => { setAdding(true); setError(""); }}
-            className="flex shrink-0 items-center justify-center gap-2 bg-[#28a89d] hover:bg-[#1f8c82] text-white text-sm font-medium px-4 py-2.5 rounded-xl transition">
+            className="flex shrink-0 items-center justify-center gap-2 bg-[#151513] hover:bg-[#26251f] text-white text-sm font-medium px-4 py-2.5 rounded-xl transition">
             <PlusCircle className="w-4 h-4" /> Add Category
           </button>
         )}
@@ -176,7 +176,7 @@ export function InventoryClient({ categories }: { categories: Category[] }) {
                 {templateSelect(newTemplate, setNewTemplate)}
                 <div className="flex gap-2">
                   <button onClick={submitAdd} disabled={pending || !newName.trim()}
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-[#28a89d] hover:bg-[#1f8c82] text-white text-sm py-2 rounded-lg disabled:opacity-40 transition">
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-[#151513] hover:bg-[#26251f] text-white text-sm py-2 rounded-lg disabled:opacity-40 transition">
                     {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Save
                   </button>
                   <button onClick={() => { setAdding(false); setError(""); }}

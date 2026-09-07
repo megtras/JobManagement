@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import type { Role, CustomerType, PropertyType } from "@/generated/prisma/client";
+import { nextCustomerNo } from "@/lib/record-numbers";
 
 const CUST_TYPES: CustomerType[] = ["CORPORATE", "END_USER"];
 const PROPERTY_TYPES: PropertyType[] = ["CONDO", "LANDED", "OFFICE", "FACTORY", "OTHERS"];
@@ -163,9 +164,11 @@ export async function createCustomer(data: {
   const validated = validateCustomerInput(data);
   const duplicate = await findDuplicateCustomerByPhone(validated.phone, targetBranch);
   if (duplicate) throw new Error(`Phone number already exists for customer CU-${String(duplicate.custNo).padStart(4, "0")}.`);
+  const custNo = await nextCustomerNo();
 
   const customer = await prisma.customer.create({
     data: {
+      custNo,
       // Quick-add: an unnamed customer defaults to "Lead" and can be renamed later.
       name: validated.name || "Lead",
       custType: validated.custType,
@@ -199,23 +202,21 @@ export async function updateCustomer(
   const duplicate = await findDuplicateCustomerByPhone(validated.phone, customer.branchId, id);
   if (duplicate) throw new Error(`Phone number already exists for customer CU-${String(duplicate.custNo).padStart(4, "0")}.`);
 
-  await prisma.$transaction([
-    prisma.customerAddress.deleteMany({ where: { customerId: id } }),
-    prisma.customer.update({
-      where: { id },
-      data: {
-        name: validated.name,
-        custType: validated.custType,
-        phone: validated.phone,
-        phone2: validated.phone2,
-        email: validated.email,
-        area: validated.area,
-        propertyType: validated.propertyType,
-        ...(data.closeDeal ? { status: "CLOSED" as const } : {}),
-        addresses: { create: validated.addresses },
-      },
-    }),
-  ]);
+  await prisma.customerAddress.deleteMany({ where: { customerId: id } });
+  await prisma.customer.update({
+    where: { id },
+    data: {
+      name: validated.name,
+      custType: validated.custType,
+      phone: validated.phone,
+      phone2: validated.phone2,
+      email: validated.email,
+      area: validated.area,
+      propertyType: validated.propertyType,
+      ...(data.closeDeal ? { status: "CLOSED" as const } : {}),
+      addresses: { create: validated.addresses },
+    },
+  });
   revalidatePath("/customers");
 }
 

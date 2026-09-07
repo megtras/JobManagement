@@ -1,10 +1,11 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+  runtime  = "cloudflare"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -109,7 +110,7 @@ model Branch {
 
 model User {
   id               String            @id @default(cuid())
-  staffNo          Int               @unique @default(autoincrement())
+  staffNo          Int               @unique
   name             String
   email            String            @unique
   passwordHash     String
@@ -158,7 +159,7 @@ model Team {
 model JobCategory {
   id        String   @id @default(cuid())
   name      String
-  price     Decimal  @db.Decimal(10, 2)
+  price     Decimal
   minEvidencePhotos Int @default(3)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -166,11 +167,42 @@ model JobCategory {
   customers    Customer[]
   appointments Appointment[]
   assets       AppointmentAsset[]
+  assetPrices  AssetTypePrice[]
+}
+
+// Asset types (Wall Mounted, Cassette, ...) are data rather than a hardcoded
+// list, so staff can manage them from the Inventory page.
+model AssetType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  prices AssetTypePrice[]
+}
+
+// Price for one (asset type x job category) pair. A missing row is not an
+// error: the appointment form falls back to the category's own price, so
+// adding a category or a type never leaves a combination unpriced.
+model AssetTypePrice {
+  id            String   @id @default(cuid())
+  assetTypeId   String
+  jobCategoryId String
+  price         Decimal
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  assetType   AssetType   @relation(fields: [assetTypeId], references: [id], onDelete: Cascade)
+  jobCategory JobCategory @relation(fields: [jobCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([assetTypeId, jobCategoryId])
+  @@index([jobCategoryId])
 }
 
 model Customer {
   id            String         @id @default(cuid())
-  custNo        Int            @unique @default(autoincrement())
+  custNo        Int            @unique
   name          String
   custType      CustomerType   @default(END_USER)
   phone         String
@@ -210,7 +242,7 @@ model CustomerAddress {
 
 model Appointment {
   id               String            @id @default(cuid())
-  jobNo            Int               @unique @default(autoincrement())
+  jobNo            Int               @unique
   customerId       String
   branchId         String
   jobCategoryId    String?
@@ -227,8 +259,8 @@ model Appointment {
   status           AppointmentStatus @default(COMING_SOON)
   billingType      BillingType        @default(CHARGEABLE)
   warrantyNote     String?
-  totalPrice       Decimal           @db.Decimal(10, 2)
-  commission       Decimal?          @db.Decimal(10, 2)
+  totalPrice       Decimal
+  commission       Decimal?
   approvedAt       DateTime?
   approvedById     String?
   clockInAt        DateTime?         // set when the technician taps Start Task
@@ -282,7 +314,7 @@ model AppointmentAsset {
   label               String
   acType              String  @default("")
   jobCategoryId       String?
-  unitPrice           Decimal @db.Decimal(10, 2) @default(0)
+  unitPrice           Decimal @default(0)
   billingType         BillingType @default(CHARGEABLE)
   isTroubleshoot      Boolean @default(false)
   remarks             String?
@@ -307,7 +339,7 @@ model Payment {
   id              String        @id @default(cuid())
   appointmentId   String
   method          PaymentMethod
-  amount          Decimal       @db.Decimal(10, 2)
+  amount          Decimal
   receiptPhotoUrl String?
   status          PaymentStatus @default(PENDING)
   rejectReason    String?
@@ -389,7 +421,7 @@ model Notification {
 
 model WebsiteLead {
   id                String            @id @default(cuid())
-  leadNo            Int               @unique @default(autoincrement())
+  leadNo            Int               @unique
   status            WebsiteLeadStatus @default(NEW_ENQUIRY)
   conversionMethod  WebsiteLeadMethod @default(BOOKING_FORM)
   name              String

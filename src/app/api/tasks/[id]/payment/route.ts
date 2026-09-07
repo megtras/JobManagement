@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { uploadPublicUrl } from "@/lib/upload-urls";
+import { putUpload } from "@/lib/storage";
 import { technicianTeamAccessWhere } from "@/lib/task-access";
 import { validateTaskEvidenceReady } from "@/lib/task-evidence";
 import { capturedDate, clientGeneratedId } from "@/lib/offline/server";
@@ -71,11 +70,14 @@ export async function POST(
   let receiptPhotoUrl: string | null = null;
 
   if (receipt && (method === "CASH" || method === "QR_TRANSFER")) {
-    const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR ?? "./public/uploads", "photos");
-    await mkdir(uploadDir, { recursive: true });
     const ext = receipt.name.split(".").pop() ?? "jpg";
     const filename = `${id}-receipt-${Date.now()}.${ext}`;
-    await writeFile(path.join(uploadDir, filename), Buffer.from(await receipt.arrayBuffer()));
+    await putUpload(
+      "photos",
+      filename,
+      Buffer.from(await receipt.arrayBuffer()),
+      receipt.type || "application/octet-stream",
+    );
     receiptPhotoUrl = uploadPublicUrl("photos", filename);
   }
 

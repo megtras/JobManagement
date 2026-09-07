@@ -127,7 +127,7 @@ test("uploaded evidence photos can be opened to edit the photo name or retake th
   assert.match(photoRouteSource, /const isMultipart = req\.headers\.get\("content-type"\)\?\.includes\("multipart\/form-data"\)/);
   assert.match(photoRouteSource, /const photoId = isMultipart \? form\.get\("photoId"\) as string \| null : body\.photoId/);
   assert.match(photoRouteSource, /prisma\.servicePhoto\.update/);
-  assert.match(photoRouteSource, /await unlink\(path\.join\(uploadDir, path\.basename\(photo\.photoUrl\)\)\)\.catch\(\(\) => undefined\)/);
+  assert.match(photoRouteSource, /await deleteUploadByUrl\(photo\.photoUrl\)/);
 });
 
 test("editing or retaking a work progress photo keeps it in its original position", () => {

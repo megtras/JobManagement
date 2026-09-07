@@ -56,5 +56,5 @@ export function whatsappReportLink(phone: string | null | undefined, pdfUrl: str
   const digits = phone.replace(/^0/, "").replace(/\D/g, "");
   if (!digits) return "";
   const reportUrl = publicReportUrl(pdfUrl, request);
-  return `https://wa.me/60${digits}?text=${encodeURIComponent(`Service report from GenPlus Aircond: ${reportUrl}`)}`;
+  return `https://wa.me/60${digits}?text=${encodeURIComponent(`Service report from Megtras: ${reportUrl}`)}`;
 }

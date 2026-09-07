@@ -37,7 +37,7 @@ const DEFAULT_ZOOM = 10;
 const CARTO_TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 const GOOGLE_MAPS_MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID;
-const GENPLUS_CAR_GREEN = "#28a89d";
+const CAR_PULSE_TOKEN = "#F2B705";
 const CAR_PIN_RED = "#ef4444";
 const CAR_BODY_RED = "#dc2626";
 const TRACKING_ROLE_COLOR: Record<TeamTrackingPoint["role"], string> = {
@@ -52,13 +52,13 @@ const CAR_MARKER_SVG = `
   <svg xmlns="http://www.w3.org/2000/svg" width="100" height="110" viewBox="0 -16 84 92" fill="none" aria-hidden="true">
     <defs>
       <linearGradient id="carBody" x1="14" y1="26" x2="60" y2="54" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#8af3ea"/>
-        <stop offset=".42" stop-color="#2fbcb0"/>
-        <stop offset="1" stop-color="#0a6a62"/>
+        <stop stop-color="#4a4842"/>
+        <stop offset=".42" stop-color="#33322d"/>
+        <stop offset="1" stop-color="#1e1e1b"/>
       </linearGradient>
       <linearGradient id="carLower" x1="14" y1="45" x2="60" y2="56" gradientUnits="userSpaceOnUse">
-        <stop stop-color="#0f867b"/>
-        <stop offset="1" stop-color="#063f3a"/>
+        <stop stop-color="#26251f"/>
+        <stop offset="1" stop-color="#151513"/>
       </linearGradient>
       <linearGradient id="carGlass" x1="26" y1="21" x2="50" y2="34" gradientUnits="userSpaceOnUse">
         <stop stop-color="#bfe9ff"/>
@@ -80,7 +80,7 @@ const CAR_MARKER_SVG = `
     </defs>
 
     <!-- live pulse on the ground -->
-    <ellipse cx="42" cy="60" rx="12" ry="3" fill="none" stroke="${GENPLUS_CAR_GREEN}" stroke-width="2.4" opacity=".5">
+    <ellipse cx="42" cy="60" rx="12" ry="3" fill="none" stroke="${CAR_PULSE_TOKEN}" stroke-width="2.4" opacity=".5">
       <animate attributeName="rx" values="11;32;11" dur="2.2s" repeatCount="indefinite"/>
       <animate attributeName="ry" values="2.8;7;2.8" dur="2.2s" repeatCount="indefinite"/>
       <animate attributeName="opacity" values=".55;0;.55" dur="2.2s" repeatCount="indefinite"/>
@@ -119,8 +119,8 @@ const CAR_MARKER_SVG = `
       <!-- side mirror -->
       <path d="M50.6 30c1.7-.5 3.4-.2 4.3.8-1.1 1-2.8 1.2-4.3.7Z" fill="${CAR_BODY_RED}"/>
       <!-- door handle + seam -->
-      <path d="M33.6 38.4h5.6" stroke="#d4fbf5" stroke-width="1.5" stroke-linecap="round" opacity=".85"/>
-      <path d="M40 32.6v9.6" stroke="#054b46" stroke-width=".8" opacity=".45"/>
+      <path d="M33.6 38.4h5.6" stroke="#F2B705" stroke-width="1.5" stroke-linecap="round" opacity=".85"/>
+      <path d="M40 32.6v9.6" stroke="#0d0d0c" stroke-width=".8" opacity=".45"/>
 
       <!-- headlight (front) + taillight (rear) -->
       <path d="M63.6 35.8l5.8 1c1.5.3 2.6 1.4 2.9 2.8l-8.2-.4-.5-3.4Z" fill="#fde68a"/>
@@ -159,7 +159,7 @@ function buildCarMarkerSvg(role: TeamTrackingPoint["role"]) {
   const color = TRACKING_ROLE_COLOR[role] ?? TRACKING_ROLE_COLOR.TECHNICIAN;
   return CAR_MARKER_SVG
     .replaceAll(CAR_BODY_RED, color)
-    .replaceAll(GENPLUS_CAR_GREEN, color);
+    .replaceAll(CAR_PULSE_TOKEN, color);
 }
 
 function CAR_MARKER_HTML(role: TeamTrackingPoint["role"]) {
@@ -448,7 +448,7 @@ export function TrackingPanel({ points, label }: { points: TeamTrackingPoint[]; 
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-              <Car className="h-4 w-4 text-teal-600" />
+              <Car className="h-4 w-4 text-[#151513]" />
               Tracking
             </h2>
             <p className="mt-0.5 text-xs text-gray-400">
@@ -481,7 +481,7 @@ export function TrackingPanel({ points, label }: { points: TeamTrackingPoint[]; 
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <div>
                 <h3 className="flex items-center gap-2 font-semibold text-gray-900">
-                  <Car className="h-4 w-4 text-teal-600" />
+                  <Car className="h-4 w-4 text-[#151513]" />
                   Tracking
                 </h3>
                 <p className="text-xs text-gray-400">{trackedCount} active account location{trackedCount === 1 ? "" : "s"}</p>

@@ -381,7 +381,7 @@ export function AppointmentDetailClient({
     setActionError("");
     try {
       const res = await fetch(`/api/appointments/${appt.id}/approve`, { method: "POST" });
-      const data = await res.json();
+      const data = await res.json() as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Approve failed");
       await load();
     } catch (err: unknown) {
@@ -437,7 +437,7 @@ export function AppointmentDetailClient({
         method: "POST",
         body: form,
       });
-      const data = await res.json();
+      const data = await res.json() as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Could not upload payment proof");
       clearOfficeReceiptDraft();
       await load();
@@ -632,7 +632,7 @@ export function AppointmentDetailClient({
           <div className="pt-1">
             <p className="text-base font-bold text-blue-700">{isFullyFoc ? "FOC" : `RM ${chargeableTotal.toFixed(2)}`}</p>
             {isWarranty && (
-              <p className="text-xs font-medium text-teal-700">
+              <p className="text-xs font-medium text-[#151513]">
                 {isFullyFoc ? "Warranty - no payment required" : "Warranty job - chargeable items included"}
               </p>
             )}
@@ -774,7 +774,7 @@ export function AppointmentDetailClient({
                                   <p className="text-gray-700">{asset.remarks || "-"}</p>
                                 </div>
                                 {asset.unitPrice != null && (
-                                  <span className={`text-xs font-semibold shrink-0 ${asset.billingType === "WARRANTY" ? "text-teal-700" : "text-blue-700"}`}>
+                                  <span className={`text-xs font-semibold shrink-0 ${asset.billingType === "WARRANTY" ? "text-[#151513]" : "text-blue-700"}`}>
                                     {asset.billingType === "WARRANTY" ? "FOC" : `RM ${Number(asset.unitPrice).toFixed(2)}`}
                                   </span>
                                 )}
@@ -859,11 +859,11 @@ export function AppointmentDetailClient({
           )}
 
           {isWarranty && (
-            <div className="rounded-lg border border-teal-100 bg-teal-50 px-3 py-2 text-sm text-teal-800">
+            <div className="rounded-lg border border-[#F2B705]/30 bg-[#F2B705]/10 px-3 py-2 text-sm text-[#151513]">
               <p className="font-semibold">
                 {isFullyFoc ? "This appointment is covered under warranty. No payment is required." : "This appointment includes warranty items. Chargeable items still require payment."}
               </p>
-              {appt.warrantyNote && <p className="mt-1 text-teal-700">{appt.warrantyNote}</p>}
+              {appt.warrantyNote && <p className="mt-1 text-[#151513]">{appt.warrantyNote}</p>}
             </div>
           )}
 
@@ -923,7 +923,7 @@ export function AppointmentDetailClient({
                           type="button"
                           onClick={() => saveOfficeReceipt(p.id)}
                           disabled={officeReceiptSaving === p.id}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-[#28a89d] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#1f8c82] disabled:bg-[#28a89d]/60"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-[#151513] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#26251f] disabled:bg-[#151513]/60"
                         >
                           {officeReceiptSaving === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                           Save
@@ -1004,13 +1004,13 @@ export function AppointmentDetailClient({
 
               {reportEditDraft ? (
                 <form
-                  className="space-y-5 rounded-xl border border-teal-100 bg-teal-50/40 p-4"
+                  className="space-y-5 rounded-xl border border-[#F2B705]/30 bg-[#F2B705]/10/40 p-4"
                   onSubmit={(event) => {
                     event.preventDefault();
                     void saveReportEdit();
                   }}
                 >
-                  <div className="rounded-lg border border-teal-100 bg-white px-3 py-2 text-xs leading-relaxed text-teal-800">
+                  <div className="rounded-lg border border-[#F2B705]/30 bg-white px-3 py-2 text-xs leading-relaxed text-[#151513]">
                     Original signatures are retained. Saving these changes will generate a fresh PDF report.
                   </div>
 
@@ -1025,7 +1025,7 @@ export function AppointmentDetailClient({
                           ...current,
                           technicianName: event.target.value,
                         } : current)}
-                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-[#F2B705] focus:ring-2 focus:ring-[#F2B705]/30"
                       />
                     </label>
                     <label className="space-y-1.5">
@@ -1038,7 +1038,7 @@ export function AppointmentDetailClient({
                           ...current,
                           clientName: event.target.value,
                         } : current)}
-                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-[#F2B705] focus:ring-2 focus:ring-[#F2B705]/30"
                       />
                     </label>
                     <label className="space-y-1.5 sm:col-span-2">
@@ -1051,7 +1051,7 @@ export function AppointmentDetailClient({
                           ...current,
                           reportDate: event.target.value,
                         } : current)}
-                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-[#F2B705] focus:ring-2 focus:ring-[#F2B705]/30"
                       />
                     </label>
                   </div>
@@ -1075,7 +1075,7 @@ export function AppointmentDetailClient({
                               value={draftAsset.technicianRemark}
                               onChange={(event) => updateReportAssetRemark(draftAsset.id, event.target.value)}
                               placeholder="Technician finding or work completed"
-                              className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                              className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-[#F2B705] focus:ring-2 focus:ring-[#F2B705]/30"
                             />
                           </label>
                         );
@@ -1108,7 +1108,7 @@ export function AppointmentDetailClient({
                                   value={draftPhoto.label}
                                   onChange={(event) => updateReportPhotoLabel(draftPhoto.id, event.target.value)}
                                   placeholder={`Photo ${index + 1}`}
-                                  className="w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm text-gray-800 outline-none transition focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+                                  className="w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm text-gray-800 outline-none transition focus:border-[#F2B705] focus:ring-2 focus:ring-[#F2B705]/30"
                                 />
                               </span>
                             </label>
@@ -1118,7 +1118,7 @@ export function AppointmentDetailClient({
                     </div>
                   )}
 
-                  <div className="flex flex-wrap justify-end gap-2 border-t border-teal-100 pt-4">
+                  <div className="flex flex-wrap justify-end gap-2 border-t border-[#F2B705]/30 pt-4">
                     <button
                       type="button"
                       onClick={() => {
@@ -1134,7 +1134,7 @@ export function AppointmentDetailClient({
                     <button
                       type="submit"
                       disabled={reportSaving}
-                      className="inline-flex items-center gap-2 rounded-lg bg-[#075d56] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#064d47] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="inline-flex items-center gap-2 rounded-lg bg-[#151513] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#26251f] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {reportSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                       {reportSaving ? "Saving & updating PDF" : "Save report"}
@@ -1164,7 +1164,7 @@ export function AppointmentDetailClient({
                       <button
                         type="button"
                         onClick={beginReportEdit}
-                        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs font-semibold text-teal-800 transition hover:border-teal-300 hover:bg-teal-100"
+                        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#F2B705]/40 bg-[#F2B705]/10 px-3 py-2 text-xs font-semibold text-[#151513] transition hover:border-[#F2B705]/60 hover:bg-[#F2B705]/20"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                         Edit report
@@ -1177,7 +1177,7 @@ export function AppointmentDetailClient({
                       type="button"
                       onClick={() => handleOpenReportPdf(appt.report!.pdfUrl!)}
                       disabled={pdfOpenPending}
-                      className="inline-flex items-center gap-2 bg-[#28a89d] hover:bg-[#1f8c82] disabled:bg-[#28a89d]/50 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+                      className="inline-flex items-center gap-2 bg-[#151513] hover:bg-[#26251f] disabled:bg-[#151513]/50 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
                     >
                       {pdfOpenPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                       {pdfOpenPending ? "Preparing PDF" : "Download PDF Report"}

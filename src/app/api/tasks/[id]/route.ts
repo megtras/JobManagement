@@ -115,7 +115,7 @@ export async function PATCH(
     select: { id: true, clockOutAt: true },
   });
   if (!appt) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const { assetId, technicianRemark } = await req.json();
+  const { assetId, technicianRemark } = await req.json() as { assetId?: string; technicianRemark?: string };
   if (typeof assetId !== "string" || !assetId) {
     return NextResponse.json({ error: "Asset id required" }, { status: 400 });
   }

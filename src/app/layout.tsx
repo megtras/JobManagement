@@ -14,24 +14,24 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3100"
   ),
   title: {
-    default: "GenPlus Aircond",
-    template: "%s | GenPlus Aircond",
+    default: "Megtras",
+    template: "%s | Megtras",
   },
   icons: {
     icon: [
       {
-        url: "/icons/genplus-favicon-16-v2.png",
+        url: "/icons/favicon-16.png",
         sizes: "16x16",
         type: "image/png",
       },
       {
-        url: "/icons/genplus-favicon-32-v2.png",
+        url: "/icons/favicon-32.png",
         sizes: "32x32",
         type: "image/png",
       },
     ],
-    shortcut: "/icons/genplus-favicon-32-v2.png",
-    apple: "/icons/genplus-apple-touch-v2.png",
+    shortcut: "/icons/favicon-32.png",
+    apple: "/icons/icon-180.png",
   },
 };
 

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Calendar, Clock, MapPin, Users, Wrench, ShieldCheck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { GenPlusLogo } from "@/components/brand/GenPlusLogo";
+import { MegtrasLogo } from "@/components/brand/MegtrasLogo";
 
 export const dynamic = "force-dynamic";
 
@@ -39,11 +39,11 @@ export default async function SharedAppointmentPage({ params }: { params: Promis
   return (
     <div className="min-h-screen bg-neutral-50">
       {/* ── Banner ── */}
-      <header className="bg-linear-to-br from-[#28a89d] to-[#0c5a53] text-white">
+      <header className="bg-linear-to-br from-[#151513] to-[#26251f] text-white">
         <div className="mx-auto max-w-2xl px-5 py-8 sm:py-10">
           <div className="flex items-center justify-between gap-4">
             <div className="flex h-12 w-40 items-center justify-center rounded-2xl bg-white px-4 shadow-sm">
-              <GenPlusLogo className="h-8 w-auto" />
+              <MegtrasLogo className="h-8 w-auto" />
             </div>
             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${status.cls}`}>{status.label}</span>
           </div>
@@ -62,7 +62,7 @@ export default async function SharedAppointmentPage({ params }: { params: Promis
         <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
           <p className="text-sm text-gray-500">Dear <span className="font-semibold text-gray-800">{appt.customer.name}</span>,</p>
           <p className="mt-1 text-sm leading-relaxed text-gray-600">
-            Thank you for choosing GenPlus Aircond. Here are the details of your scheduled service.
+            Thank you for choosing Megtras. Here are the details of your scheduled service.
           </p>
 
           <dl className="mt-5 space-y-4">
@@ -77,7 +77,7 @@ export default async function SharedAppointmentPage({ params }: { params: Promis
         {appt.assets.length > 0 && (
           <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-              <Wrench className="h-4 w-4 text-[#1f8c82]" /> Service Items
+              <Wrench className="h-4 w-4 text-[#151513]" /> Service Items
             </h2>
             <ul className="mt-3 divide-y divide-gray-100">
               {appt.assets.map((asset) => (
@@ -100,7 +100,7 @@ export default async function SharedAppointmentPage({ params }: { params: Promis
             </ul>
             <div className="mt-3 flex items-center justify-between border-t border-gray-200 pt-3">
               <span className="text-sm font-semibold text-gray-800">Total</span>
-              <span className="text-base font-bold text-[#1f8c82]">{total}</span>
+              <span className="text-base font-bold text-[#151513]">{total}</span>
             </div>
           </section>
         )}
@@ -108,10 +108,10 @@ export default async function SharedAppointmentPage({ params }: { params: Promis
         {/* Terms link */}
         <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex items-start gap-3">
-            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#1f8c82]" />
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#151513]" />
             <p className="text-sm leading-relaxed text-gray-600">
               By confirming this booking, you agree to our{" "}
-              <Link href="/terms-and-conditions" className="font-semibold text-[#1f8c82] underline decoration-[#28a89d]/40 underline-offset-2 hover:text-[#0c5a53]">
+              <Link href="/terms-and-conditions" className="font-semibold text-[#151513] underline decoration-[#F2B705]/60 underline-offset-2 hover:text-[#26251f]">
                 Terms &amp; Conditions
               </Link>{" "}
               for the air conditioner cleaning service.
@@ -120,7 +120,7 @@ export default async function SharedAppointmentPage({ params }: { params: Promis
         </section>
 
         <footer className="pt-2 text-center text-xs text-gray-400">
-          © 2026 GenPlus Aircond · 012-2579290
+          © 2026 Megtras · 012-2579290
         </footer>
       </main>
     </div>
@@ -134,8 +134,8 @@ function DetailRow({ icon: Icon, label, children }: {
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#28a89d]/10">
-        <Icon className="h-4 w-4 text-[#1f8c82]" />
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F2B705]/15">
+        <Icon className="h-4 w-4 text-[#151513]" />
       </div>
       <div className="min-w-0">
         <dt className="text-xs text-gray-400">{label}</dt>

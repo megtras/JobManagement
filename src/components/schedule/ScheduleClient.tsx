@@ -172,7 +172,7 @@ export function ScheduleClient({ appointments, teams, categories, customers, bra
             <div className="flex rounded-lg border border-gray-200 bg-white overflow-hidden text-xs">
               {(["ALL", "COMING_SOON", "IN_PROGRESS", "DONE"] as const).map((s) => (
                 <button key={s} onClick={() => setStatusFilter(s)}
-                  className={`px-2.5 py-1.5 font-medium transition ${statusFilter === s ? "bg-[#28a89d] text-white" : "text-gray-600 hover:bg-gray-50"} ${s !== "ALL" ? "border-l border-gray-200" : ""}`}>
+                  className={`px-2.5 py-1.5 font-medium transition ${statusFilter === s ? "bg-[#151513] text-white" : "text-gray-600 hover:bg-gray-50"} ${s !== "ALL" ? "border-l border-gray-200" : ""}`}>
                   {s === "ALL" ? "All" : STATUS_LABEL[s]}
                 </button>
               ))}
@@ -295,7 +295,7 @@ export function ScheduleClient({ appointments, teams, categories, customers, bra
                 <div key={idx} className={`min-h-[90px] p-1.5 ${!isCurrentMonth ? "bg-gray-50/50" : ""}`}>
                   <button onClick={() => { setView("TODAY"); setCursor(new Date(date)); }}
                     className={`text-xs font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full transition hover:bg-gray-100 ${
-                      isToday ? "bg-[#28a89d] text-white hover:bg-[#1f8c82]" : isCurrentMonth ? "text-gray-700" : "text-gray-300"
+                      isToday ? "bg-[#151513] text-white hover:bg-[#26251f]" : isCurrentMonth ? "text-gray-700" : "text-gray-300"
                     }`}>
                     {date.getDate()}
                   </button>
@@ -363,7 +363,7 @@ export function ScheduleClient({ appointments, teams, categories, customers, bra
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => openEdit(selected)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#28a89d] hover:bg-[#1f8c82] text-white text-xs font-medium px-3 py-1.5 transition">
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#151513] hover:bg-[#26251f] text-white text-xs font-medium px-3 py-1.5 transition">
                   <Pencil className="w-3.5 h-3.5" /> Edit
                 </button>
                 <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600">

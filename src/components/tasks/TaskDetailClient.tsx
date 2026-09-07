@@ -335,7 +335,7 @@ function Stepper({ current }: { current: number }) {
               <div className="flex flex-col items-center">
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors
-                    ${done ? "bg-green-500 text-white" : active ? "bg-[#28a89d] text-white" : "bg-gray-200 text-gray-400"}`}
+                    ${done ? "bg-green-500 text-white" : active ? "bg-[#151513] text-white" : "bg-gray-200 text-gray-400"}`}
                 >
                   {done ? <Check className="w-3.5 h-3.5" /> : i + 1}
                 </div>
@@ -1740,7 +1740,7 @@ export function TaskDetailClient({
   function reportWhatsappLink(url: string, phone: string) {
     const abs = normalizeUploadUrl(url);
     const href = abs.startsWith("http") ? abs : `${window.location.origin}${abs}`;
-    return `${whatsappLink(phone)}?text=${encodeURIComponent(`Service report from GenPlus Aircond: ${href}`)}`;
+    return `${whatsappLink(phone)}?text=${encodeURIComponent(`Service report from Megtras: ${href}`)}`;
   }
 
   function locationKey(loc: WorkLocationGroup, locIdx: number) {
@@ -1867,7 +1867,7 @@ export function TaskDetailClient({
                 type="button"
                 onClick={captureAttendanceSelfie}
                 disabled={photoUploading || !!attendanceCameraError || (livePhotoType === "EVIDENCE" && !photoLabel.trim())}
-                className="flex-1 rounded-lg bg-[#28a89d] py-2.5 text-sm font-semibold text-white hover:bg-[#1f8c82] disabled:bg-[#28a89d]/50"
+                className="flex-1 rounded-lg bg-[#151513] py-2.5 text-sm font-semibold text-white hover:bg-[#26251f] disabled:bg-[#151513]/50"
               >
                 {photoUploading ? "Uploading..." : livePhotoType === "ATTENDANCE" ? "Capture Selfie" : "Take live photo"}
               </button>
@@ -1916,7 +1916,7 @@ export function TaskDetailClient({
                 type="button"
                 onClick={handleSavePhotoEdit}
                 disabled={editPhotoSaving || !editingPhotoLabel.trim()}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#28a89d] py-2.5 text-sm font-semibold text-white hover:bg-[#1f8c82] disabled:bg-[#28a89d]/50"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#151513] py-2.5 text-sm font-semibold text-white hover:bg-[#26251f] disabled:bg-[#151513]/50"
               >
                 {editPhotoSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 Save Changes
@@ -2231,7 +2231,7 @@ export function TaskDetailClient({
       <div className={`bg-white rounded-xl border border-gray-200 p-4 space-y-3 ${hideBeforeCheckoutOnMobile}`}>
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-[#28a89d] text-white">1</div>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-[#151513] text-white">1</div>
             <h2 className="font-semibold text-gray-900">Check-in</h2>
             <span className="ml-auto text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded-full">
               {workLocations.length} address{workLocations.length === 1 ? "" : "es"}
@@ -2376,7 +2376,7 @@ export function TaskDetailClient({
       {assetStepVisible && (
       <div className={`bg-white rounded-xl border border-gray-200 p-4 space-y-3 ${hideBeforeCheckoutOnMobile}`}>
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-[#28a89d] text-white">2</div>
+          <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-[#151513] text-white">2</div>
           <h2 className="font-semibold text-gray-900">Assets</h2>
         </div>
         {workLocations.length > 0 && (
@@ -2551,7 +2551,7 @@ export function TaskDetailClient({
         <div>
           <p className="text-base font-bold text-blue-700">{isFullyFoc ? "FOC" : `RM ${chargeableTotal.toFixed(2)}`}</p>
           {isWarranty && (
-            <p className="text-xs font-medium text-teal-700">
+            <p className="text-xs font-medium text-[#151513]">
               {isFullyFoc ? "Warranty - no payment required" : "Warranty job - chargeable items included"}
             </p>
           )}
@@ -2578,7 +2578,7 @@ export function TaskDetailClient({
             <button
               type="button"
               onClick={() => setContinueRepairOpen(true)}
-              className="flex items-center justify-center gap-2 rounded-xl bg-[#28a89d] px-4 py-3 text-sm font-semibold text-white hover:bg-[#218d84]"
+              className="flex items-center justify-center gap-2 rounded-xl bg-[#151513] px-4 py-3 text-sm font-semibold text-white hover:bg-[#26251f]"
             >
               Continue Repair
             </button>
@@ -2589,7 +2589,7 @@ export function TaskDetailClient({
       {continueRepairOpen && !isDone && (
         <div
           ref={repairPickerRef}
-          className={`rounded-xl border border-teal-200 bg-white p-4 space-y-3 ${hideBeforeCheckoutOnMobile}`}
+          className={`rounded-xl border border-[#F2B705]/40 bg-white p-4 space-y-3 ${hideBeforeCheckoutOnMobile}`}
         >
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -2607,7 +2607,7 @@ export function TaskDetailClient({
                 id="repair-category"
                 value={newWorkCategoryId}
                 onChange={(e) => setNewWorkCategoryId(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F2B705]"
               >
                 <option value="">Select category</option>
                 {repairCategoryOptions.map((category) => (
@@ -2627,7 +2627,7 @@ export function TaskDetailClient({
               <button
                 type="button"
                 onClick={() => setNewWorkBillingType("WARRANTY")}
-                className={`rounded-lg border px-3 py-2 text-sm font-semibold ${newWorkBillingType === "WARRANTY" ? "border-teal-500 bg-teal-50 text-teal-700" : "border-gray-200 text-gray-600 hover:border-teal-300"}`}
+                className={`rounded-lg border px-3 py-2 text-sm font-semibold ${newWorkBillingType === "WARRANTY" ? "border-[#F2B705] bg-[#F2B705]/10 text-[#151513]" : "border-gray-200 text-gray-600 hover:border-[#F2B705]/60"}`}
               >
                 FOC under Warranty
               </button>
@@ -2644,7 +2644,7 @@ export function TaskDetailClient({
             type="button"
             onClick={handleAddWorkItem}
             disabled={addingWorkItem || !newWorkCategoryId}
-            className="w-full rounded-xl bg-[#28a89d] px-4 py-3 text-sm font-semibold text-white hover:bg-[#218d84] disabled:bg-gray-300 disabled:text-gray-500"
+            className="w-full rounded-xl bg-[#151513] px-4 py-3 text-sm font-semibold text-white hover:bg-[#26251f] disabled:bg-gray-300 disabled:text-gray-500"
           >
             {addingWorkItem ? "Adding..." : "Add Work Item"}
           </button>
@@ -2667,7 +2667,7 @@ export function TaskDetailClient({
       {false && task && hasCheckedIn && !isDone && (
         <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
           <div className="flex items-center gap-2">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hasEnoughPhotos ? "bg-green-500 text-white" : "bg-[#28a89d] text-white"}`}>
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hasEnoughPhotos ? "bg-green-500 text-white" : "bg-[#151513] text-white"}`}>
               {hasEnoughPhotos ? <Check className="w-3.5 h-3.5" /> : "2"}
             </div>
             <h2 className="font-semibold text-gray-900">Evidence</h2>
@@ -2744,7 +2744,7 @@ export function TaskDetailClient({
       {paymentStepVisible && !isDone && (
         <div ref={paymentStepRef} className={`bg-white rounded-xl border border-gray-200 p-4 space-y-4 ${hideBeforeCheckoutOnMobile}`}>
           <div className="flex items-center gap-2">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hasApprovedPayment ? "bg-green-500 text-white" : "bg-[#28a89d] text-white"}`}>
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${hasApprovedPayment ? "bg-green-500 text-white" : "bg-[#151513] text-white"}`}>
               {hasApprovedPayment ? <Check className="w-3.5 h-3.5" /> : "3"}
             </div>
             <h2 className="font-semibold text-gray-900">Payment</h2>
@@ -2823,7 +2823,7 @@ export function TaskDetailClient({
               <button
                 onClick={handlePayment}
                 disabled={payLoading || !canSubmitPayment}
-                className="w-full flex items-center justify-center gap-2 bg-[#28a89d] hover:bg-[#1f8c82] disabled:bg-gray-300 disabled:text-gray-500 text-white font-medium py-3 rounded-xl transition-colors"
+                className="w-full flex items-center justify-center gap-2 bg-[#151513] hover:bg-[#26251f] disabled:bg-gray-300 disabled:text-gray-500 text-white font-medium py-3 rounded-xl transition-colors"
               >
                 {payLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
                 {payLoading ? "Submitting…" : "Confirm Payment"}
@@ -2834,9 +2834,9 @@ export function TaskDetailClient({
       )}
 
       {focNoticeVisible && (
-        <div className={`rounded-xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-800 ${hideBeforeCheckoutOnMobile}`}>
+        <div className={`rounded-xl border border-[#F2B705]/40 bg-[#F2B705]/10 p-4 text-sm text-[#151513] ${hideBeforeCheckoutOnMobile}`}>
           <p className="font-semibold">{isWarranty ? "This job is covered under warranty. No payment is required." : "No payment is required for this job."}</p>
-          {task.warrantyNote && <p className="mt-1 text-teal-700">{task.warrantyNote}</p>}
+          {task.warrantyNote && <p className="mt-1 text-[#151513]">{task.warrantyNote}</p>}
         </div>
       )}
 
@@ -2895,7 +2895,7 @@ export function TaskDetailClient({
       {signatureStepVisible && (
         <div className={`bg-white rounded-xl border border-gray-200 p-4 space-y-4 ${hideBeforeCheckoutOnMobile}`}>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-[#28a89d] text-white">4</div>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-[#151513] text-white">4</div>
             <h2 className="font-semibold text-gray-900">Signatures</h2>
           </div>
 
@@ -3017,7 +3017,7 @@ export function TaskDetailClient({
                 void openPdf(url, doneResult?.whatsappLink ?? reportWhatsappLink(url, task.customer.phone));
               }}
               disabled={pdfOpenPending}
-              className="w-full flex items-center justify-center gap-2 bg-[#28a89d] hover:bg-[#1f8c82] disabled:bg-[#28a89d]/50 text-white font-medium px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+              className="w-full flex items-center justify-center gap-2 bg-[#151513] hover:bg-[#26251f] disabled:bg-[#151513]/50 text-white font-medium px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap"
             >
               {pdfOpenPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               {pdfOpenPending ? "Preparing PDF" : "View PDF Report"}

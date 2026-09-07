@@ -12,14 +12,14 @@ function createTransport() {
 
 export async function sendReportEmail({
   to, customerName, appointmentDate, jobCategory, technicianName,
-  pdfPath, whatsappLink,
+  pdfContent, whatsappLink,
 }: {
   to: string;
   customerName: string;
   appointmentDate: string;
   jobCategory: string;
   technicianName: string;
-  pdfPath: string;
+  pdfContent?: Uint8Array;
   whatsappLink: string;
 }) {
   // Demo copies must never send email unless a developer explicitly opts in.
@@ -29,24 +29,24 @@ export async function sendReportEmail({
   const transporter = createTransport();
   const attachments: Attachment[] = [];
 
-  if (pdfPath) {
-    attachments.push({ filename: "service-report.pdf", path: pdfPath });
+  if (pdfContent) {
+    attachments.push({ filename: "service-report.pdf", content: Buffer.from(pdfContent) });
   }
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
-      <h2 style="color:#1e3a8a">Service Report — GenPlus Aircond</h2>
+      <h2 style="color:#151513">Service Report — Megtras</h2>
       <p>Dear <strong>${customerName}</strong>,</p>
-      <p>Thank you for choosing GenPlus Aircond. Your service has been completed.</p>
+      <p>Thank you for choosing Megtras. Your service has been completed.</p>
       <table style="width:100%;border-collapse:collapse;margin:16px 0">
         <tr><td style="padding:6px;color:#666">Date</td><td style="padding:6px;font-weight:bold">${appointmentDate}</td></tr>
         <tr><td style="padding:6px;color:#666">Service</td><td style="padding:6px;font-weight:bold">${jobCategory}</td></tr>
         <tr><td style="padding:6px;color:#666">Technician</td><td style="padding:6px;font-weight:bold">${technicianName}</td></tr>
       </table>
-      ${pdfPath ? "<p>Please find your service report attached.</p>" : ""}
+      ${pdfContent ? "<p>Please find your service report attached.</p>" : ""}
       ${whatsappLink ? `<p><a href="${whatsappLink}" style="color:#25D366">Share via WhatsApp</a></p>` : ""}
       <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
-      <p style="font-size:12px;color:#999">GenPlus Aircond — Professional Air Conditioning Services</p>
+      <p style="font-size:12px;color:#999">Megtras — Professional Air Conditioning Services</p>
     </div>
   `;
 

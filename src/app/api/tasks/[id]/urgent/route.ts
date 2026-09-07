@@ -16,7 +16,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { reason, occurredAt } = await req.json();
+  const { reason, occurredAt } = await req.json() as { reason?: string; occurredAt?: string };
   if (typeof reason !== "string" || !reason.trim()) {
     return NextResponse.json({ error: "Please describe why this task is urgent." }, { status: 400 });
   }

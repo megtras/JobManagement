@@ -14,7 +14,7 @@ export function BranchFilter({ branches, value, onChange }: Props) {
       <button
         onClick={() => onChange("ALL")}
         className={`px-3 py-1.5 font-medium transition ${
-          value === "ALL" ? "bg-[#28a89d] text-white" : "text-gray-600 hover:bg-gray-50"
+          value === "ALL" ? "bg-[#151513] text-white" : "text-gray-600 hover:bg-gray-50"
         }`}
       >
         All
@@ -24,7 +24,7 @@ export function BranchFilter({ branches, value, onChange }: Props) {
           key={b.id}
           onClick={() => onChange(b.id)}
           className={`px-3 py-1.5 font-medium transition border-l border-gray-200 ${
-            value === b.id ? "bg-[#28a89d] text-white" : "text-gray-600 hover:bg-gray-50"
+            value === b.id ? "bg-[#151513] text-white" : "text-gray-600 hover:bg-gray-50"
           }`}
         >
           {b.name}

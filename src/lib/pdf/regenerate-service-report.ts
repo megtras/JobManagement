@@ -1,10 +1,9 @@
 import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { mkdir, readFile, writeFile } from "fs/promises";
-import path from "path";
 import { prisma } from "@/lib/prisma";
 import { uploadPublicUrl } from "@/lib/upload-urls";
 import { ReportDocument } from "@/lib/pdf/ReportDocument";
+import { putUpload, uploadBytesByUrl } from "@/lib/storage";
 
 export async function regenerateServiceReportPdf(appointmentId: string) {
   const appt = await prisma.appointment.findUnique({
@@ -24,13 +23,13 @@ export async function regenerateServiceReportPdf(appointmentId: string) {
   if (!appt) throw new Error("Appointment not found");
   if (!appt.report) throw new Error("Report not found");
 
-  const photosDir = path.join(process.cwd(), process.env.UPLOAD_DIR ?? "./public/uploads", "photos");
   async function loadPhotoDataUrl(photoUrl: string): Promise<string | null> {
     try {
-      const buf = await readFile(path.join(photosDir, path.basename(photoUrl)));
-      const ext = path.extname(photoUrl).toLowerCase();
+      const buf = await uploadBytesByUrl(photoUrl);
+      if (!buf) return null;
+      const ext = photoUrl.slice(photoUrl.lastIndexOf(".")).toLowerCase();
       const mime = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
-      return `data:${mime};base64,${buf.toString("base64")}`;
+      return `data:${mime};base64,${Buffer.from(buf).toString("base64")}`;
     } catch {
       return null;
     }
@@ -85,10 +84,8 @@ export async function regenerateServiceReportPdf(appointmentId: string) {
     }) as unknown as Parameters<typeof renderToBuffer>[0],
   );
 
-  const reportsDir = path.join(process.cwd(), process.env.UPLOAD_DIR ?? "./public/uploads", "reports");
-  await mkdir(reportsDir, { recursive: true });
   const pdfFilename = `report-${appointmentId}-${Date.now()}.pdf`;
-  await writeFile(path.join(reportsDir, pdfFilename), pdfBuffer);
+  await putUpload("reports", pdfFilename, pdfBuffer, "application/pdf");
   const pdfUrl = uploadPublicUrl("reports", pdfFilename);
 
   await prisma.report.update({

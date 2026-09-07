@@ -236,7 +236,7 @@ export function CustomerModal({
               <button type="button" onClick={onClose}
                 className="flex-1 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition">Cancel</button>
               <button type="submit" disabled={pending}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#28a89d] hover:bg-[#1f8c82] disabled:bg-[#28a89d]/50 text-white text-sm font-medium transition">
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#151513] hover:bg-[#26251f] disabled:bg-[#151513]/50 text-white text-sm font-medium transition">
                 {pending ? <><Loader2 className="w-4 h-4 animate-spin" />Saving...</> : isEdit ? "Update" : "Add Customer"}
               </button>
             </div>
@@ -284,7 +284,7 @@ export function CustomerModal({
                   setDuplicateCustomer(null);
                   onClose();
                 }}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#28a89d] py-2.5 text-sm font-medium text-white transition hover:bg-[#1f8c82]"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[#151513] py-2.5 text-sm font-medium text-white transition hover:bg-[#26251f]"
               >
                 <CalendarPlus className="h-4 w-4" /> Add Appointment
               </button>

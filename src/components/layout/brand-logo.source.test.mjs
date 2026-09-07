@@ -6,21 +6,29 @@ const sidebarSource = readFileSync(new URL("./Sidebar.tsx", import.meta.url), "u
 const topBarSource = readFileSync(new URL("./TopBar.tsx", import.meta.url), "utf8");
 const loginSource = readFileSync(new URL("../../app/(application)/login/page.tsx", import.meta.url), "utf8");
 
-test("application shell uses the GenPlus logo asset instead of the old wind icon", () => {
+test("application shell uses the Megtras logo asset instead of the old wind icon", () => {
   for (const source of [sidebarSource, topBarSource, loginSource]) {
-    assert.match(source, /GenPlusLogo/);
+    assert.match(source, /MegtrasLogo/);
     assert.doesNotMatch(source, /<Wind/);
   }
 });
 
-test("desktop sidebar uses a dark black background with a blurred GenPlus teal glow", () => {
-  assert.match(sidebarSource, /radial-gradient\(circle at -16% 58%, #1ea89bcc 0%, #1ea89b8f 30%, #1ea89b40 55%, transparent 78%\)/);
-  assert.match(sidebarSource, /radial-gradient\(circle at 52% 88%, #1ea89b80 0%, #1ea89b36 44%, transparent 68%\)/);
-  assert.match(sidebarSource, /linear-gradient\(180deg, #092326 0%, #031011 100%\)/);
+test("desktop sidebar is a flat dark rail, not a colour-washed gradient", () => {
+  // A near-flat charcoal ground. Tinted radial washes over charcoal read as
+  // muddy olive and cost the nav labels their contrast, so there are none.
+  assert.match(sidebarSource, /linear-gradient\(180deg, #1A1917 0%, #121110 55%, #0D0C0B 100%\)/);
+  assert.doesNotMatch(sidebarSource, /radial-gradient\(circle at/);
+  assert.doesNotMatch(sidebarSource, /#F2B705(?:59|38|30|18|14)\b/);
+  // Depth is a neutral top sheen plus a bottom fade — no hue.
   assert.match(sidebarSource, /pointer-events-none absolute inset-0/);
-  assert.match(sidebarSource, /linear-gradient\(180deg, rgba\(0, 0, 0, 0\.08\) 0%, rgba\(0, 0, 0, 0\.18\) 52%, rgba\(0, 0, 0, 0\.52\) 100%\)/);
+  assert.match(sidebarSource, /radial-gradient\(120% 60% at 50% 0%, rgba\(255, 255, 255, 0\.045\) 0%, transparent 60%\)/);
   assert.match(sidebarSource, /className="relative z-10/);
-  assert.match(sidebarSource, /#1ea89b/);
+  // Hairline separator rather than a glow edge.
+  assert.match(sidebarSource, /border-r border-\[#2A2925\]/);
+  // Yellow is reserved for the active item; idle labels are warm off-white.
+  assert.match(sidebarSource, /bg-\[#F2B705\] text-\[#151513\]/);
+  assert.match(sidebarSource, /text-\[#C9C3B6\]/);
+  assert.doesNotMatch(sidebarSource, /text-neutral-300/);
   assert.doesNotMatch(sidebarSource, /bg-neutral-950/);
-  assert.doesNotMatch(sidebarSource, /bg-\[#061517\]/);
+  assert.doesNotMatch(sidebarSource, /#12363a/);
 });

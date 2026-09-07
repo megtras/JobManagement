@@ -43,29 +43,27 @@ export async function POST(
   }
 
   const now = new Date();
-  await prisma.$transaction(async (tx) => {
-    if (appt.checkIns.length === 0) {
-      await tx.checkIn.create({
-        data: {
-          appointmentId: id,
-          technicianId: requesterId,
-          lat: checkLat,
-          lng: checkLng,
-          source: "SOS_PUSH",
-          approvedById: session.user.id,
-        },
-      });
-    }
-
-    await tx.appointment.update({
-      where: { id },
+  if (appt.checkIns.length === 0) {
+    await prisma.checkIn.create({
       data: {
-        status: "IN_PROGRESS",
-        clockInAt: appt.clockInAt ?? now,
-        checkInSosResolvedAt: new Date(),
-        checkInSosResolvedById: session.user.id,
+        appointmentId: id,
+        technicianId: requesterId,
+        lat: checkLat,
+        lng: checkLng,
+        source: "SOS_PUSH",
+        approvedById: session.user.id,
       },
     });
+  }
+
+  await prisma.appointment.update({
+    where: { id },
+    data: {
+      status: "IN_PROGRESS",
+      clockInAt: appt.clockInAt ?? now,
+      checkInSosResolvedAt: new Date(),
+      checkInSosResolvedById: session.user.id,
+    },
   });
 
   revalidatePath("/appointments");

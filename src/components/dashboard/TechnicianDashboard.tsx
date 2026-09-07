@@ -115,7 +115,7 @@ export function TechnicianDashboard({ userName, tasks }: Props) {
                 type="button"
                 onClick={() => changePeriod({ view: item.value, cursor: item.value === "TODAY" ? new Date() : period.cursor })}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
-                  period.view === item.value ? "bg-[#28a89d] text-white" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  period.view === item.value ? "bg-[#151513] text-white" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}
               >
                 {item.label}
@@ -154,7 +154,7 @@ export function TechnicianDashboard({ userName, tasks }: Props) {
                   type="button"
                   onClick={() => changeFilter(item.value)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
-                    filter === item.value ? "bg-[#28a89d] text-white" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    filter === item.value ? "bg-[#151513] text-white" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                 >
                   {item.label}

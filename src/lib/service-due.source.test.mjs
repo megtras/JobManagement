@@ -42,7 +42,7 @@ test("service due notifications go to supervisors and branch management without 
   assert.match(helperSource, /existingRecipientIds/);
   assert.match(helperSource, /Service due reminder for/);
   assert.match(notificationsRouteSource, /await notifyServiceDueCustomers\(\)/);
-  assert.match(notificationsClientSource, /SERVICE_DUE:\s*\{ icon: CalendarClock, color: "text-teal-600"\s*\}/);
+  assert.match(notificationsClientSource, /SERVICE_DUE:\s*\{ icon: CalendarClock, color: "text-\[#151513\]"\s*\}/);
   assert.match(notificationsClientSource, /notification\.type === "SERVICE_DUE"\s*\?\s*"\/customers\?serviceDue=1"/);
 });
 

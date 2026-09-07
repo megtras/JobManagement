@@ -1,10 +1,11 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import type { FormEvent, KeyboardEvent, MouseEvent, WheelEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import type { FormEvent, MouseEvent } from "react";
 import { useRouter } from "next/navigation";
-import { X, Loader2, Plus, Trash2, Navigation, MapPin, Pencil, ChevronDown, Clock } from "lucide-react";
+import { X, Loader2, Plus, Trash2, Navigation, MapPin, Pencil, ChevronDown } from "lucide-react";
 import { createAppointment } from "@/lib/actions/appointments";
+import { getAssetTypePricing } from "@/lib/actions/inventory";
 import { AddressPickerModal } from "@/components/customers/AddressPickerModal";
 
 interface Category { id: string; name: string; price: number }
@@ -112,7 +113,9 @@ const PROPERTY_TYPE_OPTIONS = [
   { value: "Factory", label: "Factory" },
   { value: "Others", label: "Others" },
 ] as const;
-const AC_TYPES = ["Wall Mounted", "Cassette", "Exposed", "Ducting", "Wiring"];
+// Asset types and their per-category prices are managed on the Inventory page.
+// The modal loads them itself so all five call sites get them without threading
+// props through five pages.
 
 let _k = 0;
 const nk = () => String(++_k);
@@ -127,7 +130,7 @@ function openNativePicker(e: MouseEvent<HTMLInputElement>) {
 }
 
 function emptyAsset(): AssetInput {
-  return { _key: nk(), label: "", acType: AC_TYPES[0], jobCategoryId: "", unitPrice: "", remarks: "" };
+  return { _key: nk(), label: "", acType: "", jobCategoryId: "", unitPrice: "", remarks: "" };
 }
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
@@ -154,13 +157,7 @@ function defaultStartForDate(dateStr: string): string {
   return candidate > "09:00" ? candidate : "09:00";
 }
 
-type TimePart = "hour" | "minute" | "meridiem";
 type Meridiem = "AM" | "PM";
-
-function wrapNumber(value: number, min: number, max: number) {
-  const size = max - min + 1;
-  return ((value - min) % size + size) % size + min;
-}
 
 function splitTimeValue(value: string) {
   const [rawHour, rawMinute] = value.split(":").map(Number);
@@ -173,315 +170,46 @@ function splitTimeValue(value: string) {
   };
 }
 
-function buildTimeValue(hour12: number, minute: number, meridiem: Meridiem) {
-  const hour24 = (hour12 % 12) + (meridiem === "PM" ? 12 : 0);
-  return `${pad2(hour24)}:${pad2(minute)}`;
-}
-
-function formatMobileTimeDisplay(value: string) {
+function formatTimeDisplay(value: string) {
   const parsed = splitTimeValue(value);
   return `${pad2(parsed.hour12)}:${pad2(parsed.minute)} ${parsed.meridiem}`;
 }
 
-function parseMobileTimeInput(rawValue: string) {
-  const raw = rawValue.trim().toUpperCase();
-  if (!raw) return "";
-
-  const meridiemMatch = raw.match(/\s*(AM?|PM?)$/);
-  const meridiem = meridiemMatch
-    ? (meridiemMatch[1].startsWith("P") ? "PM" : "AM")
-    : "";
-  const body = raw
-    .replace(/\s*(AM?|PM?)$/, "")
-    .replace(/[^\d:]/g, "");
-
-  let hourText = "";
-  let minuteText = "";
-  if (body.includes(":")) {
-    const [hour = "", minute = ""] = body.split(":");
-    hourText = hour;
-    minuteText = minute || "00";
-  } else if (body.length <= 2) {
-    hourText = body;
-    minuteText = "00";
-  } else {
-    hourText = body.slice(0, -2);
-    minuteText = body.slice(-2);
-  }
-
-  if (!hourText) return null;
-  const hour = Number(hourText);
-  const minute = Number(minuteText);
-  if (!Number.isInteger(hour) || !Number.isInteger(minute) || minute < 0 || minute > 59) return null;
-
-  if (meridiem) {
-    if (hour < 1 || hour > 12) return null;
-    const hour24 = (hour % 12) + (meridiem === "PM" ? 12 : 0);
-    return `${pad2(hour24)}:${pad2(minute)}`;
-  }
-
-  if (hour < 0 || hour > 23) return null;
-  return `${pad2(hour)}:${pad2(minute)}`;
-}
-
-function sanitizeMobileTimeDraft(rawValue: string) {
-  const upper = rawValue.toUpperCase();
-  const meridiemMatch = upper.match(/\s*(AM?|PM?)$/);
-  const meridiem = meridiemMatch ? ` ${meridiemMatch[1].startsWith("P") ? "PM" : "AM"}` : "";
-  const body = upper
-    .replace(/\s*(AM?|PM?)$/, "")
-    .replace(/[^\d:]/g, "");
-
-  if (body.includes(":")) {
-    const [hour = "", minute = ""] = body.split(":");
-    return `${hour.slice(0, 2)}:${minute.slice(0, 2)}${meridiem}`;
-  }
-
-  const digits = body.replace(/\D/g, "").slice(0, 4);
-  if (digits.length <= 3) return `${digits}${meridiem}`;
-  return `${digits.slice(0, 2)}:${digits.slice(2)}${meridiem}`;
-}
-
-function shouldCommitMobileTimeDraft(draft: string) {
-  const text = draft.trim().toUpperCase();
-  const parsed = parseMobileTimeInput(text);
-  if (!parsed) return false;
-
-  const body = text.replace(/\s*(AM?|PM?)$/, "");
-  const digits = body.replace(/\D/g, "");
-  const minuteText = body.includes(":") ? body.split(":")[1] ?? "" : "";
-  const hasMeridiem = /\s(AM|PM)$/.test(text);
-  return digits.length === 4 || minuteText.length >= 2 || hasMeridiem;
-}
-
-const MOBILE_TIME_PICKER_OPTIONS = Array.from({ length: 24 * 4 }, (_, index) => {
+// 15-minute slots across the day. A plain <select> is deliberate: on a phone it
+// opens the OS wheel picker in one tap, where the old segmented spinner needed
+// three fiddly drags and the text variant popped the keyboard.
+const TIME_OPTIONS = Array.from({ length: 24 * 4 }, (_, index) => {
   const totalMinutes = index * 15;
-  const hour = Math.floor(totalMinutes / 60);
-  const minute = totalMinutes % 60;
-  const value = `${pad2(hour)}:${pad2(minute)}`;
-  return { value, label: formatMobileTimeDisplay(value) };
+  const value = `${pad2(Math.floor(totalMinutes / 60))}:${pad2(totalMinutes % 60)}`;
+  return { value, label: formatTimeDisplay(value) };
 });
 
-function MobileTimePickerInput({ value, onChange, ariaLabel }: {
+function TimeSelect({ value, onChange, ariaLabel, placeholder }: {
   value: string;
   onChange: (value: string) => void;
   ariaLabel: string;
+  placeholder: string;
 }) {
-  const [draft, setDraft] = useState(() => value ? formatMobileTimeDisplay(value) : "");
-  const [editing, setEditing] = useState(false);
-  const [open, setOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!editing) setDraft(value ? formatMobileTimeDisplay(value) : "");
-  }, [editing, value]);
-
-  function applyValue(nextValue: string) {
-    onChange(nextValue);
-    setDraft(nextValue ? formatMobileTimeDisplay(nextValue) : "");
-  }
-
-  function commitDraft(nextDraft: string) {
-    const parsed = parseMobileTimeInput(nextDraft);
-    setEditing(false);
-    setOpen(false);
-    if (parsed !== null) {
-      applyValue(parsed);
-      return;
-    }
-    setDraft(value ? formatMobileTimeDisplay(value) : "");
-  }
-
-  function handleBlur() {
-    window.setTimeout(() => {
-      if (wrapperRef.current?.contains(document.activeElement)) return;
-      commitDraft(draft);
-    }, 0);
-  }
+  // An appointment saved at, say, 09:24 is not on the 15-minute grid. Keep it
+  // as an option so opening the form never silently rewrites a saved time.
+  const options = useMemo(() => {
+    if (!value || TIME_OPTIONS.some((option) => option.value === value)) return TIME_OPTIONS;
+    return [...TIME_OPTIONS, { value, label: formatTimeDisplay(value) }]
+      .sort((a, b) => a.value.localeCompare(b.value));
+  }, [value]);
 
   return (
-    <div ref={wrapperRef} className="relative">
-      <input
-        type="text"
-        inputMode="text"
-        value={draft}
-        onChange={(e) => {
-          const nextDraft = sanitizeMobileTimeDraft(e.target.value);
-          setDraft(nextDraft);
-          if (shouldCommitMobileTimeDraft(nextDraft)) {
-            const parsed = parseMobileTimeInput(nextDraft);
-            if (parsed) onChange(parsed);
-          }
-        }}
-        onFocus={(e) => {
-          setEditing(true);
-          setOpen(true);
-          e.currentTarget.select();
-        }}
-        onClick={() => setOpen(true)}
-        onBlur={handleBlur}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            commitDraft(draft);
-          }
-          if (e.key === "Escape") {
-            e.preventDefault();
-            setDraft(value ? formatMobileTimeDisplay(value) : "");
-            setEditing(false);
-            setOpen(false);
-          }
-        }}
-        aria-label={ariaLabel}
-        placeholder="07:00 PM"
-        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-      {open && (
-        <div className="absolute left-0 right-0 top-full z-[90] mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-lg">
-          {MOBILE_TIME_PICKER_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                applyValue(option.value);
-                setEditing(false);
-                setOpen(false);
-              }}
-              className={`block w-full px-3 py-2 text-left tabular-nums ${
-                option.value === value ? "bg-blue-600 text-white" : "text-gray-700 hover:bg-blue-50 hover:text-blue-700"
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TimeSpinnerInput({ value, onChange, ariaLabel }: {
-  value: string;
-  onChange: (value: string) => void;
-  ariaLabel: string;
-}) {
-  const [activePart, setActivePart] = useState<TimePart>("hour");
-  const [isScrollLocked, setIsScrollLocked] = useState(false);
-  const typedRef = useRef<{ part: TimePart; value: string; at: number }>({ part: "hour", value: "", at: 0 });
-  const timeSpinnerRef = useRef<HTMLDivElement>(null);
-  const parsed = splitTimeValue(value);
-
-  useEffect(() => {
-    if (!isScrollLocked) return;
-
-    const preventPageWheel = (event: globalThis.WheelEvent) => {
-      event.preventDefault();
-    };
-
-    document.addEventListener("wheel", preventPageWheel, { passive: false });
-    return () => document.removeEventListener("wheel", preventPageWheel);
-  }, [isScrollLocked]);
-
-  function updatePart(part: TimePart, patch: number | Meridiem) {
-    if (part === "hour" && typeof patch === "number") {
-      onChange(buildTimeValue(wrapNumber(patch, 1, 12), parsed.minute, parsed.meridiem));
-    } else if (part === "minute" && typeof patch === "number") {
-      onChange(buildTimeValue(parsed.hour12, wrapNumber(patch, 0, 59), parsed.meridiem));
-    } else if (part === "meridiem" && typeof patch === "string") {
-      onChange(buildTimeValue(parsed.hour12, parsed.minute, patch));
-    }
-  }
-
-  function adjustPart(part: TimePart, delta: number) {
-    if (part === "hour") updatePart(part, parsed.hour12 + delta);
-    if (part === "minute") updatePart(part, parsed.minute + delta);
-    if (part === "meridiem") updatePart(part, parsed.meridiem === "AM" ? "PM" : "AM");
-  }
-
-  function applyTypedDigit(part: TimePart, digit: string) {
-    if (part === "meridiem") return;
-    const now = Date.now();
-    const typed = typedRef.current.part === part && now - typedRef.current.at < 900
-      ? `${typedRef.current.value}${digit}`.slice(-2)
-      : digit;
-    typedRef.current = { part, value: typed, at: now };
-
-    let numeric = Number(typed);
-    if (part === "hour" && (numeric < 1 || numeric > 12)) numeric = Number(digit) || 12;
-    if (part === "minute" && numeric > 59) numeric = Number(digit);
-    updatePart(part, numeric);
-  }
-
-  function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    if (e.key === "ArrowUp" || e.key === "ArrowRight") {
-      e.preventDefault();
-      adjustPart(activePart, 1);
-      return;
-    }
-    if (e.key === "ArrowDown" || e.key === "ArrowLeft") {
-      e.preventDefault();
-      adjustPart(activePart, -1);
-      return;
-    }
-    if (/^\d$/.test(e.key)) {
-      e.preventDefault();
-      applyTypedDigit(activePart, e.key);
-      return;
-    }
-    if (e.key.toLowerCase() === "a" || e.key.toLowerCase() === "p") {
-      e.preventDefault();
-      setActivePart("meridiem");
-      updatePart("meridiem", e.key.toLowerCase() === "a" ? "AM" : "PM");
-      return;
-    }
-    if (e.key === ":") {
-      e.preventDefault();
-      setActivePart("minute");
-    }
-  }
-
-  function handleWheel(e: WheelEvent<HTMLDivElement>) {
-    e.preventDefault();
-    e.stopPropagation();
-    adjustPart(activePart, e.deltaY < 0 ? 1 : -1);
-  }
-
-  function handleBlur() {
-    window.setTimeout(() => {
-      if (timeSpinnerRef.current?.contains(document.activeElement)) return;
-      setIsScrollLocked(false);
-    }, 0);
-  }
-
-  const partClass = (part: TimePart) =>
-    `rounded-md px-1.5 py-0.5 tabular-nums transition ${activePart === part ? "bg-blue-600 text-white" : "text-gray-800 hover:bg-gray-100"}`;
-
-  return (
-    <div
-      ref={timeSpinnerRef}
-      role="group"
+    <select
+      value={value}
       aria-label={ariaLabel}
-      tabIndex={0}
-      onFocus={() => setIsScrollLocked(true)}
-      onMouseDown={() => setIsScrollLocked(true)}
-      onBlur={handleBlur}
-      onKeyDown={handleKeyDown}
-      onWheel={handleWheel}
-      className="flex w-full items-center rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm focus-within:ring-2 focus-within:ring-blue-500"
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#F2B705] focus:border-transparent transition"
     >
-      <button type="button" className={partClass("hour")} onFocus={() => setActivePart("hour")} onClick={() => setActivePart("hour")}>
-        {pad2(parsed.hour12)}
-      </button>
-      <span className="px-0.5 text-gray-400">:</span>
-      <button type="button" className={partClass("minute")} onFocus={() => setActivePart("minute")} onClick={() => setActivePart("minute")}>
-        {pad2(parsed.minute)}
-      </button>
-      <button type="button" className={`${partClass("meridiem")} ml-1`} onFocus={() => setActivePart("meridiem")} onClick={() => setActivePart("meridiem")}>
-        {parsed.meridiem}
-      </button>
-      <Clock className="ml-auto h-4 w-4 text-gray-500" />
-    </div>
+      <option value="">{placeholder}</option>
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>{option.label}</option>
+      ))}
+    </select>
   );
 }
 
@@ -529,7 +257,7 @@ function assetFromRow(asset: AppointmentAssetRow): AssetInput {
     id: asset.id,
     _key: nk(),
     label: asset.label,
-    acType: asset.acType ?? AC_TYPES[0],
+    acType: asset.acType ?? "",
     jobCategoryId: asset.jobCategoryId ?? "",
     unitPrice: asset.unitPrice != null ? String(asset.unitPrice) : "",
     billingType: asset.billingType ?? null,
@@ -603,6 +331,9 @@ export function AppointmentModal({
   const [teamIds, setTeamIds] = useState<string[]>([]);
   const [teamMenuOpen, setTeamMenuOpen] = useState(false);
   const [locations, setLocations] = useState<LocationInput[]>([]);
+  // Asset types and their per-(type x category) prices, managed in Inventory.
+  const [assetTypes, setAssetTypes] = useState<{ id: string; name: string }[]>([]);
+  const [assetPrices, setAssetPrices] = useState<{ assetTypeId: string; jobCategoryId: string; price: number }[]>([]);
   const [status, setStatus] = useState<"COMING_SOON" | "IN_PROGRESS" | "DONE">("COMING_SOON");
   const [billingType, setBillingType] = useState<"CHARGEABLE" | "WARRANTY">("CHARGEABLE");
   const [warrantyNote, setWarrantyNote] = useState("");
@@ -778,6 +509,61 @@ export function AppointmentModal({
 
   const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
+  // Loaded per open. A failure here is not fatal: the dropdown keeps whatever
+  // the asset already had and prices fall back to the category price.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    getAssetTypePricing()
+      .then((data) => {
+        if (cancelled) return;
+        setAssetTypes(data.assetTypes);
+        setAssetPrices(data.prices);
+      })
+      .catch(() => { /* keep category-price behaviour */ });
+    return () => { cancelled = true; };
+  }, [open]);
+
+  const assetTypeIdByName = useMemo(() => new Map(assetTypes.map((t) => [t.name, t.id])), [assetTypes]);
+  const priceByPair = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const entry of assetPrices) map.set(entry.assetTypeId + "::" + entry.jobCategoryId, entry.price);
+    return map;
+  }, [assetPrices]);
+
+  // Price for this (type x category) pair, else the category's own price so a
+  // combination with no matrix row is never left at zero.
+  const resolveUnitPrice = useCallback((acType: string, categoryId: string): number => {
+    const typeId = assetTypeIdByName.get(acType);
+    if (typeId) {
+      const pairPrice = priceByPair.get(typeId + "::" + categoryId);
+      if (pairPrice != null) return pairPrice;
+    }
+    return Number(categoryById.get(categoryId)?.price ?? 0);
+  }, [assetTypeIdByName, priceByPair, categoryById]);
+
+  // Assets built before the list arrived carry no type; default them to the
+  // first one so the form still behaves like the old hardcoded default.
+  useEffect(() => {
+    if (assetTypes.length === 0) return;
+    const fallback = assetTypes[0].name;
+    setLocations((prev) => {
+      let changed = false;
+      const next = prev.map((location) => ({
+        ...location,
+        propertyGroups: location.propertyGroups.map((group) => ({
+          ...group,
+          assets: group.assets.map((asset) => {
+            if (asset.acType) return asset;
+            changed = true;
+            return { ...asset, acType: fallback };
+          }),
+        })),
+      }));
+      return changed ? next : prev;
+    });
+  }, [assetTypes]);
+
   const validAssets = useMemo(() => locations.flatMap((location) =>
     location.propertyGroups.flatMap((propertyGroup) => {
       if (!propertyGroup.propertyType.trim()) return [];
@@ -785,7 +571,7 @@ export function AppointmentModal({
         .filter((asset) => asset.acType && asset.jobCategoryId)
         .map((asset) => {
           const rawUnitPrice = asset.unitPrice.trim();
-          const categoryPrice = Number(categoryById.get(asset.jobCategoryId)?.price ?? 0);
+          const categoryPrice = resolveUnitPrice(asset.acType, asset.jobCategoryId);
           const unitPrice = rawUnitPrice === "" ? categoryPrice : Number(rawUnitPrice);
           const safeUnitPrice = Number.isFinite(unitPrice) ? unitPrice : 0;
           const assetBillingType = billingType === "WARRANTY" && safeUnitPrice <= 0
@@ -807,7 +593,7 @@ export function AppointmentModal({
           };
         });
     })
-  ), [locations, categoryById, billingType]);
+  ), [locations, resolveUnitPrice, billingType]);
   const totalPrice = validAssets
     .filter((asset) => asset.billingType === "CHARGEABLE")
     .reduce((sum, asset) => sum + asset.unitPrice, 0);
@@ -898,11 +684,18 @@ export function AppointmentModal({
     }));
   }
 
-  function selectAssetCategory(locationKey: string, propertyKey: string, assetKey: string, categoryId: string) {
-    const price = categoryById.get(categoryId)?.price;
+  function selectAssetCategory(locationKey: string, propertyKey: string, assetKey: string, acType: string, categoryId: string) {
     updateAsset(locationKey, propertyKey, assetKey, {
       jobCategoryId: categoryId,
-      unitPrice: price != null ? String(price) : "",
+      unitPrice: categoryId ? String(resolveUnitPrice(acType, categoryId)) : "",
+    });
+  }
+
+  // Changing the type re-prices too, since the matrix is keyed on the pair.
+  function selectAssetType(locationKey: string, propertyKey: string, assetKey: string, acType: string, categoryId: string) {
+    updateAsset(locationKey, propertyKey, assetKey, {
+      acType,
+      ...(categoryId ? { unitPrice: String(resolveUnitPrice(acType, categoryId)) } : {}),
     });
   }
 
@@ -966,7 +759,7 @@ export function AppointmentModal({
               status, assets,
             }),
           });
-          const data = await res.json();
+          const data = await res.json() as { error?: string };
           if (!res.ok) throw new Error(data.error ?? "Could not update appointment.");
         } else {
           const created = await createAppointment({
@@ -1106,47 +899,26 @@ export function AppointmentModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Time Start</label>
-              <div className="lg:hidden">
-                <MobileTimePickerInput
-                  value={time}
-                  ariaLabel="Time Start"
-                  onChange={(v) => {
-                    const start = !allowPastSchedule && v && isToday && v < nowHM ? nowHM : v;
-                    setTime(start);
-                    // Finish defaults to one hour after the start time.
-                    if (start) setTimeFinish(addOneHour(start));
-                  }}
-                />
-              </div>
-              <div className="hidden lg:block">
-                <TimeSpinnerInput
-                  value={time}
-                  ariaLabel="Time Start"
-                  onChange={(v) => {
-                    const start = !allowPastSchedule && v && isToday && v < nowHM ? nowHM : v;
-                    setTime(start);
-                    // Finish defaults to one hour after the start time.
-                    if (start) setTimeFinish(addOneHour(start));
-                  }}
-                />
-              </div>
+              <TimeSelect
+                value={time}
+                ariaLabel="Time Start"
+                placeholder="Select start time"
+                onChange={(v) => {
+                  const start = !allowPastSchedule && v && isToday && v < nowHM ? nowHM : v;
+                  setTime(start);
+                  // Finish defaults to one hour after the start time.
+                  if (start) setTimeFinish(addOneHour(start));
+                }}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Time Finish <span className="text-gray-400 font-normal">(optional)</span></label>
-              <div className="lg:hidden">
-                <MobileTimePickerInput
-                  value={timeFinish}
-                  ariaLabel="Time Finish"
-                  onChange={setTimeFinish}
-                />
-              </div>
-              <div className="hidden lg:block">
-                <TimeSpinnerInput
-                  value={timeFinish}
-                  ariaLabel="Time Finish"
-                  onChange={setTimeFinish}
-                />
-              </div>
+              <TimeSelect
+                value={timeFinish}
+                ariaLabel="Time Finish"
+                placeholder="No finish time"
+                onChange={setTimeFinish}
+              />
             </div>
           </div>
 
@@ -1251,16 +1023,20 @@ export function AppointmentModal({
                                 </button>
                               </div>
                               <div className="grid grid-cols-2 gap-2">
-                                <select value={asset.acType} onChange={(e) => updateAsset(location._key, propertyGroup._key, asset._key, { acType: e.target.value })}
+                                <select value={asset.acType} onChange={(e) => selectAssetType(location._key, propertyGroup._key, asset._key, e.target.value, asset.jobCategoryId)}
                                   className="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                  {AC_TYPES.map((acType) => <option key={acType} value={acType}>{acType}</option>)}
+                                  <option value="" disabled>{assetTypes.length === 0 ? "No asset types - add them in Inventory" : "Select asset type"}</option>
+                                  {assetTypes.map((type) => <option key={type.id} value={type.name}>{type.name}</option>)}
+                                  {asset.acType && !assetTypes.some((type) => type.name === asset.acType) && (
+                                    <option value={asset.acType}>{asset.acType}</option>
+                                  )}
                                 </select>
                                 <input value={asset.label} onChange={(e) => updateAsset(location._key, propertyGroup._key, asset._key, { label: e.target.value })}
                                   placeholder="Label (optional) - e.g. Bedroom"
                                   className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                               </div>
                               <div className="grid grid-cols-2 gap-2">
-                                <select value={asset.jobCategoryId} onChange={(e) => selectAssetCategory(location._key, propertyGroup._key, asset._key, e.target.value)}
+                                <select value={asset.jobCategoryId} onChange={(e) => selectAssetCategory(location._key, propertyGroup._key, asset._key, asset.acType, e.target.value)}
                                   className="px-3 py-2 rounded-lg border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                   <option value="" disabled>Select category</option>
                                   {categories.map((category) => (
@@ -1308,22 +1084,22 @@ export function AppointmentModal({
                 onClick={() => setBillingType("WARRANTY")}
                 className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition ${
                   billingType === "WARRANTY"
-                    ? "border-[#28a89d] bg-teal-50 text-[#1f8c82]"
-                    : "border-gray-300 bg-white text-gray-600 hover:border-teal-300"
+                    ? "border-[#F2B705] bg-[#F2B705]/10 text-[#151513]"
+                    : "border-gray-300 bg-white text-gray-600 hover:border-[#F2B705]/60"
                 }`}
               >
                 Warranty / FOC
               </button>
             </div>
             {billingType === "WARRANTY" && (
-              <div className="space-y-2 rounded-xl border border-teal-100 bg-teal-50 p-3">
-                <p className="text-sm font-medium text-teal-800">No payment will be collected for this appointment.</p>
+              <div className="space-y-2 rounded-xl border border-[#F2B705]/30 bg-[#F2B705]/10 p-3">
+                <p className="text-sm font-medium text-[#151513]">No payment will be collected for this appointment.</p>
                 <textarea
                   value={warrantyNote}
                   onChange={(e) => setWarrantyNote(e.target.value)}
                   rows={2}
                   placeholder="Warranty note (optional)"
-                  className="w-full resize-none rounded-lg border border-teal-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#28a89d]"
+                  className="w-full resize-none rounded-lg border border-[#F2B705]/40 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#F2B705]"
                 />
               </div>
             )}
@@ -1345,7 +1121,7 @@ export function AppointmentModal({
               <div className="text-right">
                 <div className="text-lg font-bold text-blue-900">{totalPrice <= 0 ? "FOC" : `RM ${totalPrice.toFixed(2)}`}</div>
                 {billingType === "WARRANTY" && (
-                  <div className="text-xs font-medium text-teal-700">
+                  <div className="text-xs font-medium text-[#151513]">
                     {totalPrice <= 0 ? "Warranty" : "Warranty + chargeable items"}
                   </div>
                 )}
@@ -1361,7 +1137,7 @@ export function AppointmentModal({
               Cancel
             </button>
             <button type="submit" disabled={pending}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#28a89d] hover:bg-[#1f8c82] disabled:bg-[#28a89d]/50 text-white text-sm font-medium transition">
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#151513] hover:bg-[#26251f] disabled:bg-[#151513]/50 text-white text-sm font-medium transition">
               {pending ? <><Loader2 className="w-4 h-4 animate-spin" />Saving...</> : isEdit ? "Update" : isSubJob ? "Create Sub Job" : "Save Appointment"}
             </button>
           </div>

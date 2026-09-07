@@ -2,9 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { writeFile, mkdir, unlink } from "fs/promises";
-import path from "path";
 import { uploadPublicUrl } from "@/lib/upload-urls";
+import { deleteUploadByUrl, putUpload } from "@/lib/storage";
 import { technicianTeamAccessWhere } from "@/lib/task-access";
 import { capturedDate, clientGeneratedId } from "@/lib/offline/server";
 
@@ -44,14 +43,10 @@ export async function POST(
   if (!file) return NextResponse.json({ error: "No photo" }, { status: 400 });
   if (type === "EVIDENCE" && !label) return NextResponse.json({ error: "Photo name is required" }, { status: 400 });
 
-  const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR ?? "./public/uploads", "photos");
-  await mkdir(uploadDir, { recursive: true });
-
   const ext = file.name.split(".").pop() ?? "jpg";
   const filename = `${id}-${type.toLowerCase()}-${Date.now()}.${ext}`;
-  const filePath = path.join(uploadDir, filename);
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(filePath, buffer);
+  await putUpload("photos", filename, buffer, file.type || "application/octet-stream");
 
   const photoUrl = uploadPublicUrl("photos", filename);
 
@@ -89,7 +84,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Task already checked out" }, { status: 409 });
   }
 
-  const { photoId } = await req.json();
+  const { photoId } = await req.json() as { photoId?: string };
   if (!photoId) return NextResponse.json({ error: "Photo id required" }, { status: 400 });
 
   const photo = await prisma.servicePhoto.findFirst({
@@ -103,8 +98,7 @@ export async function DELETE(
 
   await prisma.servicePhoto.delete({ where: { id: photo.id } });
 
-  const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR ?? "./public/uploads", "photos");
-  await unlink(path.join(uploadDir, path.basename(photo.photoUrl))).catch(() => undefined);
+  await deleteUploadByUrl(photo.photoUrl);
 
   return NextResponse.json({ ok: true });
 }
@@ -130,7 +124,7 @@ export async function PATCH(
 
   const isMultipart = req.headers.get("content-type")?.includes("multipart/form-data");
   const form = isMultipart ? await req.formData() : new FormData();
-  const body = isMultipart ? {} as { photoId?: string; label?: string } : await req.json();
+  const body = isMultipart ? {} as { photoId?: string; label?: string } : await req.json() as { photoId?: string; label?: string };
   const photoId = isMultipart ? form.get("photoId") as string | null : body.photoId;
   const file = isMultipart ? form.get("photo") as File | null : null;
   const label = (isMultipart ? form.get("label") as string | null : body.label)?.trim() ?? "";
@@ -146,16 +140,13 @@ export async function PATCH(
     return NextResponse.json({ error: "Photo name is required" }, { status: 400 });
   }
 
-  const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR ?? "./public/uploads", "photos");
   const data: { label: string; photoUrl?: string } = { label };
 
   if (file) {
-    await mkdir(uploadDir, { recursive: true });
     const ext = file.name.split(".").pop() ?? "jpg";
     const filename = `${id}-${photo.type.toLowerCase()}-${Date.now()}.${ext}`;
-    const filePath = path.join(uploadDir, filename);
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
+    await putUpload("photos", filename, buffer, file.type || "application/octet-stream");
     data.photoUrl = uploadPublicUrl("photos", filename);
   }
 
@@ -165,7 +156,7 @@ export async function PATCH(
   });
 
   if (file) {
-    await unlink(path.join(uploadDir, path.basename(photo.photoUrl))).catch(() => undefined);
+    await deleteUploadByUrl(photo.photoUrl);
   }
 
   return NextResponse.json({ ok: true, photoUrl: data.photoUrl ?? photo.photoUrl });

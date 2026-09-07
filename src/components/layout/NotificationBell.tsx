@@ -20,7 +20,7 @@ export function NotificationBell({
       try {
         const res = await fetch("/api/notifications");
         if (!res.ok) return;
-        const data = await res.json();
+        const data = await res.json() as { unreadCount?: number };
         if (!cancelled) setUnread(data.unreadCount ?? 0);
       } catch { /* ignore */ }
     }

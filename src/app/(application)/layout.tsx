@@ -6,9 +6,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 export const metadata: Metadata = {
-  title: "GenPlus Aircond System",
-  description: "GenPlus Aircond job management system.",
-  applicationName: "GenPlus Aircond",
+  title: "Megtras System",
+  description: "Megtras job management system.",
+  applicationName: "Megtras",
   robots: { index: false, follow: false, nocache: true },
 };
 

@@ -179,17 +179,16 @@ test("appointment modal allows managers and supervisors to key in past schedule 
   assert.doesNotMatch(modalSource, /The start time has already passed/);
 });
 
-test("appointment modal time fields support typing keyboard arrows and mouse wheel edits", () => {
-  assert.match(modalSource, /function TimeSpinnerInput\(\{ value, onChange, ariaLabel \}/);
-  assert.match(modalSource, /type TimePart = "hour" \| "minute" \| "meridiem"/);
-  assert.match(modalSource, /function handleKeyDown\(e: KeyboardEvent<HTMLDivElement>\)/);
-  assert.match(modalSource, /e\.key === "ArrowUp" \|\| e\.key === "ArrowRight"/);
-  assert.match(modalSource, /e\.key === "ArrowDown" \|\| e\.key === "ArrowLeft"/);
-  assert.match(modalSource, /\/\^\\d\$\/\.test\(e\.key\)/);
-  assert.match(modalSource, /function handleWheel\(e: WheelEvent<HTMLDivElement>\)/);
-  assert.match(modalSource, /onWheel=\{handleWheel\}/);
-  assert.match(modalSource, /<TimeSpinnerInput\s*value=\{time\}[\s\S]*ariaLabel="Time Start"/);
-  assert.match(modalSource, /<TimeSpinnerInput\s*value=\{timeFinish\}[\s\S]*ariaLabel="Time Finish"/);
+test("appointment modal time fields are dropdowns of 15-minute slots", () => {
+  assert.match(modalSource, /function TimeSelect\(\{ value, onChange, ariaLabel, placeholder \}/);
+  // 24 hours x 4 slots per hour, labelled in 12-hour form.
+  assert.match(modalSource, /const TIME_OPTIONS = Array\.from\(\{ length: 24 \* 4 \}/);
+  assert.match(modalSource, /const totalMinutes = index \* 15;/);
+  assert.match(modalSource, /return \{ value, label: formatTimeDisplay\(value\) \};/);
+  assert.match(modalSource, /<TimeSelect\s*value=\{time\}[\s\S]*ariaLabel="Time Start"/);
+  assert.match(modalSource, /<TimeSelect\s*value=\{timeFinish\}[\s\S]*ariaLabel="Time Finish"/);
+  // Picking a start time still pushes the finish an hour later.
+  assert.match(modalSource, /if \(start\) setTimeFinish\(addOneHour\(start\)\);/);
   assert.doesNotMatch(modalSource, /<input type="time"/);
 });
 
@@ -217,14 +216,14 @@ test("editing appointment preserves existing asset ids so photos and technician 
   assert.match(modalSource, /id: asset\.id,/);
   assert.match(actionSource, /id\?: string;/);
   assert.match(actionSource, /id: typeof a\.id === "string" && a\.id \? a\.id : undefined/);
-  assert.match(actionSource, /const existingAssets = await tx\.appointmentAsset\.findMany/);
+  assert.match(actionSource, /const existingAssets = await prisma\.appointmentAsset\.findMany/);
   assert.match(actionSource, /_count: \{ select: \{ servicePhotos: true \} \}/);
   assert.match(actionSource, /function assetSignature\(asset:/);
   assert.match(actionSource, /const hasAssetEvidence = \(asset:/);
   assert.match(actionSource, /const sameSignatureProtected = findUnretainedExistingAsset\(asset, true\)/);
   assert.match(actionSource, /sameSignatureProtected\?\.id\s*\?\?/);
   assert.match(actionSource, /sameSignatureExisting\?\.id/);
-  assert.match(actionSource, /await tx\.appointmentAsset\.update/);
+  assert.match(actionSource, /await prisma\.appointmentAsset\.update/);
   assert.match(actionSource, /retainedAssetIds\.add\(targetAssetId\)/);
   assert.match(actionSource, /asset\._count\.servicePhotos === 0 && !asset\.technicianRemark/);
   assert.doesNotMatch(actionSource, /appointmentAsset\.deleteMany\(\{ where: \{ appointmentId: id \} \}\)/);

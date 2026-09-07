@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { writeFile, mkdir, readFile } from "fs/promises";
-import path from "path";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { createElement } from "react";
 import { ReportDocument } from "@/lib/pdf/ReportDocument";
@@ -13,6 +11,7 @@ import { technicianTeamAccessWhere } from "@/lib/task-access";
 import { validateTaskEvidenceReady } from "@/lib/task-evidence";
 import { whatsappReportLink } from "@/lib/public-url";
 import { capturedDate } from "@/lib/offline/server";
+import { putUpload, uploadBytesByUrl } from "@/lib/storage";
 
 export async function POST(
   req: Request,
@@ -52,7 +51,12 @@ export async function POST(
     technicianSignature,
     clientSignature,
     submittedAt,
-  } = await req.json();
+  } = await req.json() as {
+    technicianName?: string;
+    technicianSignature?: string;
+    clientSignature?: string;
+    submittedAt?: string;
+  };
   if (!technicianSignature || !clientSignature) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
@@ -88,13 +92,13 @@ export async function POST(
   }
 
   // Inline each asset's evidence photos as data URLs so they embed in the PDF.
-  const photosDir = path.join(process.cwd(), process.env.UPLOAD_DIR ?? "./public/uploads", "photos");
   async function loadPhotoDataUrl(photoUrl: string): Promise<string | null> {
     try {
-      const buf = await readFile(path.join(photosDir, path.basename(photoUrl)));
-      const ext = path.extname(photoUrl).toLowerCase();
+      const buf = await uploadBytesByUrl(photoUrl);
+      if (!buf) return null;
+      const ext = photoUrl.slice(photoUrl.lastIndexOf(".")).toLowerCase();
       const mime = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
-      return `data:${mime};base64,${buf.toString("base64")}`;
+      return `data:${mime};base64,${Buffer.from(buf).toString("base64")}`;
     } catch {
       return null;
     }
@@ -129,6 +133,7 @@ export async function POST(
 
   // Generate PDF
   let pdfUrl = "";
+  let pdfContent: Uint8Array | undefined;
   try {
     const pdfBuffer = await renderToBuffer(
       // @react-pdf/renderer v4 types expect DocumentProps on the root element;
@@ -150,10 +155,9 @@ export async function POST(
       }) as unknown as Parameters<typeof renderToBuffer>[0]
     );
 
-    const reportsDir = path.join(process.cwd(), process.env.UPLOAD_DIR ?? "./public/uploads", "reports");
-    await mkdir(reportsDir, { recursive: true });
     const pdfFilename = `report-${id}-${Date.now()}.pdf`;
-    await writeFile(path.join(reportsDir, pdfFilename), pdfBuffer);
+    pdfContent = new Uint8Array(pdfBuffer);
+    await putUpload("reports", pdfFilename, pdfContent, "application/pdf");
     pdfUrl = uploadPublicUrl("reports", pdfFilename);
   } catch (err) {
     console.error("PDF generation failed:", err);
@@ -195,16 +199,13 @@ export async function POST(
   // Email PDF to customer
   if (appt.customer.email) {
     try {
-      const absolutePdfPath = pdfUrl
-        ? path.join(process.cwd(), process.env.UPLOAD_DIR ?? "./public/uploads", "reports", path.basename(pdfUrl))
-        : "";
       await sendReportEmail({
         to: appt.customer.email,
         customerName: appt.customer.name,
         appointmentDate: new Date(appt.date).toLocaleDateString("en-MY"),
         jobCategory: jobCategoryName,
         technicianName,
-        pdfPath: absolutePdfPath,
+        pdfContent,
         whatsappLink,
       });
     } catch (err) {

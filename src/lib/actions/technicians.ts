@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import type { Role } from "@/generated/prisma/client";
+import { nextStaffNo } from "@/lib/record-numbers";
 
 async function getStaffSession() {
   const session = await getServerSession(authOptions);
@@ -70,9 +71,11 @@ export async function createTechnician(data: {
   // requires a unique email + password, so generate placeholder credentials.
   const email = `tech-${randomUUID()}@genplusaircond.local`;
   const passwordHash = await bcrypt.hash(randomUUID(), 12);
+  const staffNo = await nextStaffNo();
 
   await prisma.user.create({
     data: {
+      staffNo,
       name: data.name.trim(),
       email,
       passwordHash,

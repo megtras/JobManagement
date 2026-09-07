@@ -1,6 +1,5 @@
-import { readFile } from "fs/promises";
-import path from "path";
 import { NextResponse } from "next/server";
+import { getUpload, type UploadSection } from "@/lib/storage";
 
 const CONTENT_TYPES: Record<string, string> = {
   ".jpg": "image/jpeg",
@@ -10,7 +9,7 @@ const CONTENT_TYPES: Record<string, string> = {
   ".pdf": "application/pdf",
 };
 
-function resolveUploadPath(parts: string[]) {
+function resolveUpload(parts: string[]) {
   if (
     parts.length !== 2 ||
     !["photos", "reports"].includes(parts[0]) ||
@@ -19,7 +18,7 @@ function resolveUploadPath(parts: string[]) {
     return null;
   }
 
-  return path.join(process.cwd(), process.env.UPLOAD_DIR ?? "./public/uploads", parts[0], parts[1]);
+  return { section: parts[0] as UploadSection, filename: parts[1] };
 }
 
 export async function GET(
@@ -27,18 +26,18 @@ export async function GET(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path: parts } = await params;
-  const filePath = resolveUploadPath(parts ?? []);
-  if (!filePath) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const upload = resolveUpload(parts ?? []);
+  if (!upload) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   try {
-    const file = await readFile(filePath);
-    const ext = path.extname(filePath).toLowerCase();
-    const filename = path.basename(filePath);
+    const object = await getUpload(upload.section, upload.filename);
+    if (!object) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const ext = upload.filename.slice(upload.filename.lastIndexOf(".")).toLowerCase();
 
-    return new Response(new Uint8Array(file), {
+    return new Response(object.body, {
       headers: {
-        "Content-Type": CONTENT_TYPES[ext] ?? "application/octet-stream",
-        "Content-Disposition": `inline; filename="${filename}"`,
+        "Content-Type": object.httpMetadata?.contentType ?? CONTENT_TYPES[ext] ?? "application/octet-stream",
+        "Content-Disposition": `inline; filename="${upload.filename}"`,
         "Cache-Control": "no-store",
       },
     });

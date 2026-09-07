@@ -260,7 +260,7 @@ async function photonSearch(q: string): Promise<Point[]> {
     lang: "en",
   });
   const res = await fetch(`${PHOTON_URL}/api/?${params.toString()}`);
-  const raw = await res.json();
+  const raw = await res.json() as { features?: PhotonFeature[] };
   const feats: PhotonFeature[] = Array.isArray(raw?.features) ? raw.features : [];
   return feats
     .filter((f) => (f.properties.countrycode ?? "").toUpperCase() === "MY")
@@ -443,7 +443,7 @@ export function AddressPickerLeaflet({ onAdd, onClose }: Props) {
     try {
       const params = new URLSearchParams({ lat: String(lat), lon: String(lng), limit: "1", lang: "en" });
       const res = await fetch(`${PHOTON_URL}/reverse?${params.toString()}`);
-      const data = await res.json();
+      const data = await res.json() as { features?: PhotonFeature[] };
       if (reqId !== latestReverseRef.current) return;
       const feat = data?.features?.[0] as PhotonFeature | undefined;
       const display = (feat && formatPhoton(feat.properties)) || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
@@ -684,7 +684,7 @@ export function AddressPickerLeaflet({ onAdd, onClose }: Props) {
           <button
             onClick={() => { onAdd(address || query, coords?.lat ?? null, coords?.lng ?? null, selectedDistrict); onClose(); }}
             disabled={!address && !query.trim()}
-            className="flex-1 py-2.5 rounded-lg bg-[#28a89d] hover:bg-[#1f8c82] disabled:bg-[#28a89d]/50 text-white text-sm font-medium transition"
+            className="flex-1 py-2.5 rounded-lg bg-[#151513] hover:bg-[#26251f] disabled:bg-[#151513]/50 text-white text-sm font-medium transition"
           >
             Add
           </button>

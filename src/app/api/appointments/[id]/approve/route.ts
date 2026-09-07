@@ -43,16 +43,14 @@ export async function POST(
     );
   }
 
-  await prisma.$transaction([
-    prisma.appointment.update({
-      where: { id },
-      data: { approvedAt: new Date(), approvedById: userId },
-    }),
-    prisma.payment.updateMany({
-      where: { appointmentId: id, status: "PENDING" },
-      data: { status: "APPROVED", approvedById: userId },
-    }),
-  ]);
+  await prisma.appointment.update({
+    where: { id },
+    data: { approvedAt: new Date(), approvedById: userId },
+  });
+  await prisma.payment.updateMany({
+    where: { appointmentId: id, status: "PENDING" },
+    data: { status: "APPROVED", approvedById: userId },
+  });
 
   // Notify the technicians on the assigned team(s).
   const memberIds = [...new Set(appt.teams.flatMap((t) => t.members.map((m) => m.id)))];

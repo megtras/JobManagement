@@ -44,7 +44,7 @@ export function BranchesClient({ branches }: { branches: BranchRow[] }) {
         </div>
         {!adding && (
           <button onClick={() => setAdding(true)}
-            className="flex items-center gap-2 bg-[#28a89d] hover:bg-[#1f8c82] text-white text-sm font-medium px-4 py-2.5 rounded-xl transition">
+            className="flex items-center gap-2 bg-[#151513] hover:bg-[#26251f] text-white text-sm font-medium px-4 py-2.5 rounded-xl transition">
             <PlusCircle className="w-4 h-4" /> Add Branch
           </button>
         )}
@@ -64,7 +64,7 @@ export function BranchesClient({ branches }: { branches: BranchRow[] }) {
                 placeholder="Address" rows={2} className="w-full px-3 py-2 rounded-lg border border-blue-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
               <div className="flex gap-2">
                 <button onClick={submitAdd} disabled={pending || !newName.trim() || !newAddr.trim()}
-                  className="flex-1 flex items-center justify-center gap-1.5 bg-[#28a89d] hover:bg-[#1f8c82] text-white text-sm py-2 rounded-lg disabled:opacity-40 transition">
+                  className="flex-1 flex items-center justify-center gap-1.5 bg-[#151513] hover:bg-[#26251f] text-white text-sm py-2 rounded-lg disabled:opacity-40 transition">
                   {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Save
                 </button>
                 <button onClick={() => setAdding(false)} className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-600 hover:bg-gray-50 transition">
@@ -85,7 +85,7 @@ export function BranchesClient({ branches }: { branches: BranchRow[] }) {
                   rows={2} className="w-full px-3 py-2 rounded-lg border border-blue-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
                 <div className="flex gap-2">
                   <button onClick={() => submitEdit(b.id)} disabled={pending}
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-[#28a89d] text-white text-sm py-2 rounded-lg disabled:opacity-40 transition">
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-[#151513] text-white text-sm py-2 rounded-lg disabled:opacity-40 transition">
                     {pending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Save
                   </button>
                   <button onClick={() => setEditingId(null)} className="px-4 py-2 rounded-lg border border-gray-300 text-sm text-gray-600 hover:bg-gray-50 transition">

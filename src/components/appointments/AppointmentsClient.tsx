@@ -157,7 +157,7 @@ const TERMS_URL = "/terms-and-conditions";
 function appointmentShareMessage(a: AppointmentRow) {
   const time = `${a.time}${a.timeFinish ? `-${a.timeFinish}` : ""}`;
   return [
-    `Hi ${a.customer.name}, this is GenPlus Aircond.`,
+    `Hi ${a.customer.name}, this is Megtras.`,
     "",
     "Your appointment has been scheduled:",
     `Job: ${a.jobTitle || a.jobCategory?.name || "-"}`,
@@ -321,7 +321,7 @@ export function AppointmentsClient({
       try {
         const restoreScroll = preserveWindowScroll();
         const res = await fetch(`/api/payments/${paymentId}/toggle`, { method: "POST" });
-        const data = await res.json();
+        const data = await res.json() as { error?: string };
         if (!res.ok) throw new Error(data.error ?? "Toggle failed");
         router.refresh();
         restoreScroll();
@@ -350,7 +350,7 @@ export function AppointmentsClient({
     if (isWarranty && isFullyFoc) {
       return (
         <div className="min-w-0 space-y-1">
-          <div className="truncate text-sm font-medium text-teal-700">Warranty</div>
+          <div className="truncate text-sm font-medium text-[#151513]">Warranty</div>
           <div className="text-xs text-gray-400">FOC</div>
         </div>
       );
@@ -392,7 +392,7 @@ export function AppointmentsClient({
     const isFullyFoc = a.totalPrice <= 0;
     if (isWarranty && isFullyFoc) {
       return (
-        <div data-payment-status className="inline-flex rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700">
+        <div data-payment-status className="inline-flex rounded-full bg-[#F2B705]/10 px-2.5 py-1 text-xs font-semibold text-[#151513]">
           Not Required
         </div>
       );
@@ -475,7 +475,7 @@ export function AppointmentsClient({
           {(!isSupervisor || branchFilterId !== "ALL") && (
             <div className="flex flex-wrap items-center gap-2 lg:w-full lg:justify-end">
               <button onClick={openAdd}
-                className="flex min-w-[104px] justify-center shrink-0 items-center gap-2 bg-[#28a89d] hover:bg-[#1f8c82] text-white text-sm font-medium px-4 py-2 rounded-xl transition">
+                className="flex min-w-[104px] justify-center shrink-0 items-center gap-2 bg-[#151513] hover:bg-[#26251f] text-white text-sm font-medium px-4 py-2 rounded-xl transition">
                 <CalendarPlus className="w-4 h-4" /> Add
               </button>
             </div>

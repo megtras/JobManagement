@@ -1,31 +1,72 @@
 # Megtras Job Management Demo
 
-This is an independent local demo copy of the GenPlus Job Management application. The current GenPlus interface and code structure are intentionally retained for now; rebranding is a separate step.
+Standalone Megtras Job Management demo deployed at `https://demo.megtras.com`.
 
-## Safety boundaries
+## Cloudflare boundary
 
-- Uses only the local PostgreSQL database configured in `.env`.
-- Stores new demo uploads under `demo-data/uploads`.
-- Email and WhatsApp report integrations are disabled unless explicitly opted in.
-- Does not include the GenPlus marketing website, production uploads, customer files, production environment files, database dumps, build output, dependency folders, or Git history.
+This repository owns one independent Cloudflare application:
 
-## Requirements
+- Worker: `jobmanagement`
+- Custom domain: `demo.megtras.com`
+- D1 database: `jobmanagement-db` (`DB` binding)
+- R2 uploads: `jobmanagement-uploads` (`UPLOADS` binding)
+- R2 framework cache: `jobmanagement-cache` (`NEXT_INC_CACHE_R2_BUCKET` binding)
+- Worker self-reference: `jobmanagement` (`WORKER_SELF_REFERENCE` binding)
 
-- Node.js compatible with Next.js 16
-- npm
-- Docker Desktop (recommended for the isolated PostgreSQL database), or a separate local PostgreSQL instance
+The corporate website is a separate project at `megtras.com`. It only links to
+`https://demo.megtras.com`; this application does not import, call, deploy, or
+share infrastructure with the corporate website or any production system.
+
+## First-time Cloudflare setup
+
+Create resources in the Cloudflare account that owns `megtras.com`:
+
+```powershell
+npx wrangler d1 create jobmanagement-db
+npx wrangler r2 bucket create jobmanagement-uploads
+npx wrangler r2 bucket create jobmanagement-cache
+```
+
+Copy the D1 ID returned by the first command into `database_id` in
+`wrangler.jsonc`. Do not substitute another project's database ID.
+
+Store this application's secrets on the `jobmanagement` Worker:
+
+```powershell
+npx wrangler secret put NEXTAUTH_SECRET
+```
+
+Only add SMTP or map credentials if those integrations are explicitly enabled.
+They must be demo-specific values, never credentials from another deployment.
+
+Apply and seed the dedicated remote D1 database:
+
+```powershell
+npm run db:migrate:remote
+npm run db:seed:remote
+```
+
+Then deploy only this Worker:
+
+```powershell
+npm run deploy
+```
 
 ## Local setup
 
+Requirements: Node.js 20 or newer and npm.
+
 ```powershell
-docker compose up -d database
 npm ci
-npm run db:push
-npm run db:seed
+Copy-Item .dev.vars.example .dev.vars
+npm run db:migrate:local
+npm run db:seed:local
 npm run dev
 ```
 
-Open `http://localhost:3100/app/login`.
+Open `http://localhost:3100/app/login`. Local development uses Wrangler's local
+D1 and R2 emulation through the same `DB` and `UPLOADS` bindings used in the
+Worker.
 
 Demo accounts use the password `DemoOnly@1234`:
 
@@ -35,21 +76,15 @@ Demo accounts use the password `DemoOnly@1234`:
 - `technician1@demo.local`
 - `technician2@demo.local`
 
-`npm run db:push` and `npm run db:seed` affect only the database URL in this project's safe local `.env`. Review that URL before running either command.
-
-## Application architecture
-
-The frontend and backend are one Next.js application:
-
-- Frontend: App Router pages and React components under `src/app` and `src/components`.
-- Backend: route handlers under `src/app/api`, server actions under `src/lib/actions`, and Prisma under `prisma` / `src/lib/prisma.ts`.
-- Offline/PWA: `src/sw.ts`, `src/lib/offline`, and PWA components under `src/components/pwa`.
-
 ## Commands
 
-- Development (frontend + backend): `npm run dev`
-- Production build: `npm run build`
-- Production start: `npm start`
-- Generate Prisma client only: `npm run db:generate`
-- Apply schema to the isolated local demo DB: `npm run db:push`
-- Seed fictional demo accounts: `npm run db:seed`
+- `npm run dev`: Webpack development server on port 3100
+- `npm run build`: Turbopack production build used by OpenNext
+- `npm run preview`: build and preview in the Workers runtime
+- `npm run deploy`: build and deploy `jobmanagement`
+- `npm run upload`: upload a Worker version without deploying it
+- `npm run cf:typegen`: regenerate Cloudflare binding types
+- `npm run db:migrate:local`: apply D1 migrations locally
+- `npm run db:migrate:remote`: apply migrations to `jobmanagement-db`
+- `npm run db:seed:local`: seed fictional local demo data
+- `npm run db:seed:remote`: seed fictional remote demo data

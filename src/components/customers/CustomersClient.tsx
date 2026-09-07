@@ -167,7 +167,7 @@ export function CustomersClient({ customers, branches, categories, teams, isSupe
         <CalendarPlus className="w-4 h-4" />
       </button>
       <button onClick={() => setHistoryCustomer(c)} title="Service History"
-        className={`${mobile ? "p-2.5" : "p-2"} text-gray-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition`}>
+        className={`${mobile ? "p-2.5" : "p-2"} text-gray-500 hover:text-[#151513] hover:bg-[#F2B705]/10 rounded-lg transition`}>
         <FileText className="w-4 h-4" />
       </button>
       <button onClick={() => { setEditingCust(c); setCustModal(true); }}
@@ -195,7 +195,7 @@ export function CustomersClient({ customers, branches, categories, teams, isSupe
           {(!isSupervisor || branchFilterId !== "ALL") && (
             <div className="flex flex-wrap items-center gap-2 lg:w-full lg:justify-end">
               <button onClick={() => { setEditingCust(null); setCustModal(true); }}
-                className="flex min-w-[104px] justify-center shrink-0 items-center gap-2 bg-[#28a89d] hover:bg-[#1f8c82] text-white text-sm font-medium px-4 py-2 rounded-xl transition">
+                className="flex min-w-[104px] justify-center shrink-0 items-center gap-2 bg-[#151513] hover:bg-[#26251f] text-white text-sm font-medium px-4 py-2 rounded-xl transition">
                 <UserPlus className="w-4 h-4" /> Add
               </button>
             </div>
@@ -207,7 +207,7 @@ export function CustomersClient({ customers, branches, categories, teams, isSupe
         <StatBox label="Total Customers" value={totalCount} icon={Users} color="bg-blue-100 text-blue-600" active={statusFilter === "ALL" && !serviceDueOnly} onClick={() => { setStatusFilter("ALL"); setServiceDueOnly(false); }} />
         <StatBox label="Pending Deals" value={pendingCount} icon={Clock} color="bg-amber-100 text-amber-600" active={statusFilter === "PENDING" && !serviceDueOnly} onClick={() => { setStatusFilter("PENDING"); setServiceDueOnly(false); }} />
         <StatBox label="Closed Deals" value={closedCount} icon={UserCheck} color="bg-green-100 text-green-600" active={statusFilter === "CLOSED" && !serviceDueOnly} onClick={() => { setStatusFilter("CLOSED"); setServiceDueOnly(false); }} />
-        <StatBox label="Service Due" value={serviceDueCount} icon={CalendarClock} color="bg-teal-100 text-teal-600" active={serviceDueOnly} onClick={() => { setStatusFilter("ALL"); setServiceDueOnly(true); }} />
+        <StatBox label="Service Due" value={serviceDueCount} icon={CalendarClock} color="bg-[#F2B705]/20 text-[#151513]" active={serviceDueOnly} onClick={() => { setStatusFilter("ALL"); setServiceDueOnly(true); }} />
       </div>
 
       <div className="mt-[30px] mb-4 flex justify-end">
@@ -244,7 +244,7 @@ export function CustomersClient({ customers, branches, categories, teams, isSupe
                     <div className="flex min-w-0 items-center gap-2">
                       <span className="truncate font-medium text-gray-900">{c.name || "Unnamed"}</span>
                       {c.serviceDue && (
-                        <span className="shrink-0 inline-flex px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 text-xs font-medium">
+                        <span className="shrink-0 inline-flex px-2 py-0.5 rounded-full bg-[#F2B705]/20 text-[#151513] text-xs font-medium">
                           Service Due
                         </span>
                       )}

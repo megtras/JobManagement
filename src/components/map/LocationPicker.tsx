@@ -63,7 +63,7 @@ export default function LocationPicker({ lat, lng, onLocationChange }: Props) {
     setGeocoding(true);
     try {
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-      const data = await res.json();
+      const data = await res.json() as { display_name?: string };
       onLocationChange(lat, lng, data.display_name ?? `${lat.toFixed(6)}, ${lng.toFixed(6)}`);
     } catch {
       onLocationChange(lat, lng, `${lat.toFixed(6)}, ${lng.toFixed(6)}`);

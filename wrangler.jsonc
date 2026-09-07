@@ -1,0 +1,65 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "jobmanagement",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-02",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "demo.megtras.com",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "jobmanagement"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "jobmanagement-db",
+      "database_id": "5729e10b-0570-46b4-841d-88bb87aeaf2a",
+      "migrations_dir": "prisma/migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS",
+      "bucket_name": "jobmanagement-uploads"
+    },
+    {
+      "binding": "NEXT_INC_CACHE_R2_BUCKET",
+      "bucket_name": "jobmanagement-cache"
+    }
+  ],
+  "images": {
+    "binding": "IMAGES"
+  },
+  "vars": {
+    "NEXTAUTH_URL": "https://demo.megtras.com",
+    "NEXT_PUBLIC_APP_URL": "https://demo.megtras.com",
+    "GEOFENCE_RADIUS_METERS": "200",
+    "MIN_EVIDENCE_PHOTOS": "3",
+    // Maps provider. The NEXT_PUBLIC_GOOGLE_MAPS_* key and Map ID are NOT set
+    // here: NEXT_PUBLIC_* is inlined into the browser bundle at build time, so
+    // they belong in .env before `opennextjs-cloudflare build`. Vars in this
+    // file are runtime-only and never reach client code.
+    "NEXT_PUBLIC_MAPS_PROVIDER": "google",
+    "ENABLE_EXTERNAL_EMAIL": "false",
+    "ENABLE_EXTERNAL_WHATSAPP": "false",
+    "NEXT_PUBLIC_ENABLE_EXTERNAL_WHATSAPP": "false"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

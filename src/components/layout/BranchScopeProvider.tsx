@@ -84,8 +84,8 @@ export function BranchScopeSelector() {
   const options = [{ id: "ALL", name: "All Branches" }, ...branches];
 
   return (
-    <div className="mx-3 mb-4 rounded-xl bg-[#0d2225] p-3">
-      <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Branch</p>
+    <div className="mx-3 mb-4 rounded-xl border border-[#2A2925] bg-[#1C1B18] p-3">
+      <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-[#8A8375]">Branch</p>
       <div role="radiogroup" aria-label="Branch" className="mt-2 space-y-1">
         {options.map((option) => {
           const active = selectedBranchId === option.id;
@@ -97,15 +97,15 @@ export function BranchScopeSelector() {
               aria-checked={active}
               onClick={() => setSelectedBranchId(option.id)}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${
-                active ? "bg-[#1ea89b]/15 text-white" : "text-neutral-300 hover:bg-[#1ea89b]/10 hover:text-white"
+                active ? "bg-white/[0.07] text-[#F2EFE7]" : "text-[#C9C3B6] hover:bg-white/[0.06] hover:text-[#F2EFE7]"
               }`}
             >
               <span
                 className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 ${
-                  active ? "border-[#1ea89b]" : "border-neutral-600"
+                  active ? "border-[#F2B705]" : "border-[#4A473F]"
                 }`}
               >
-                {active && <span className="h-1.5 w-1.5 rounded-full bg-[#1ea89b]" />}
+                {active && <span className="h-1.5 w-1.5 rounded-full bg-[#F2B705]" />}
               </span>
               <span className="truncate">{option.name}</span>
             </button>

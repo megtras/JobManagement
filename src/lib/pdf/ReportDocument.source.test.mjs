@@ -21,10 +21,10 @@ test("each serviced asset renders as labeled fields in the PDF report", () => {
   assert.match(reportDocumentSource, /jobCategoryName\?: string \| null/);
 });
 
-test("pdf report header shows the GenPlus logo, title, and company address/phone", () => {
-  assert.match(reportDocumentSource, /import \{ GEN_LOGO_DATA_URI \} from "\.\/gen-logo-data"/);
-  // Logo image renders immediately above the GenPlus Aircond title.
-  assert.match(reportDocumentSource, /<Image src=\{GEN_LOGO_DATA_URI\} style=\{styles\.logo\} \/>\s*<Text style=\{styles\.title\}>GenPlus Aircond<\/Text>/);
+test("pdf report header shows the Megtras logo, title, and company address/phone", () => {
+  assert.match(reportDocumentSource, /import \{ MEGTRAS_LOGO_DATA_URI \} from "\.\/megtras-logo-data"/);
+  // Logo image renders immediately above the Megtras title.
+  assert.match(reportDocumentSource, /<Image src=\{MEGTRAS_LOGO_DATA_URI\} style=\{styles\.logo\} \/>\s*<Text style=\{styles\.title\}>Megtras<\/Text>/);
   assert.doesNotMatch(reportDocumentSource, /Professional Air Conditioning Services/);
   // Company address + phone follow the title.
   assert.match(reportDocumentSource, /Blok J-03-02, Dataran Glomac,/);

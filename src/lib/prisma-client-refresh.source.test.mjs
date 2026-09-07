@@ -4,11 +4,10 @@ import { test } from "node:test";
 
 const prismaSource = readFileSync(new URL("./prisma.ts", import.meta.url), "utf8");
 
-test("development prisma client is refreshed when generated schema signature changes", () => {
-  assert.match(prismaSource, /prismaSchemaSignature/);
-  assert.match(prismaSource, /minEvidencePhotos/);
-  assert.match(prismaSource, /servicePhotoLabel/);
-  assert.match(prismaSource, /checkInSos/);
-  assert.match(prismaSource, /globalForPrisma\.prismaSchemaSignature !== PRISMA_SCHEMA_SIGNATURE/);
-  assert.match(prismaSource, /\$disconnect\(\)\.catch/);
+test("Prisma is created lazily from the Job Management D1 binding", () => {
+  assert.match(prismaSource, /getCloudflareContext/);
+  assert.match(prismaSource, /new PrismaD1\(env\.DB\)/);
+  assert.match(prismaSource, /function getClient\(\)/);
+  assert.match(prismaSource, /globalForPrisma\.prisma = createClient\(\)/);
+  assert.match(prismaSource, /export const prisma = new Proxy/);
 });

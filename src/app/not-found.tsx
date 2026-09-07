@@ -13,7 +13,7 @@ export default function NotFound() {
         <div className="mt-6 grid gap-2">
           <Link
             href="/tasks"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#28a89d] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#1f8c82]"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#151513] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#26251f]"
           >
             <ClipboardList className="h-4 w-4" />
             Team Tasks

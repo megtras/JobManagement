@@ -16,26 +16,22 @@ test("edit appointment PUT payload keeps existing asset ids so category edits re
   assert.match(modalSource, /const assets = validAssets\.map\(\(asset\) => \(\{[\s\S]*id: asset\.id,/);
 });
 
-test("appointment modal keeps desktop time spinner and adds mobile tablet typing picker", () => {
-  assert.match(modalSource, /function TimeSpinnerInput/);
-  assert.match(modalSource, /function MobileTimePickerInput/);
-  assert.match(modalSource, /function parseMobileTimeInput/);
-  assert.match(modalSource, /const MOBILE_TIME_PICKER_OPTIONS = Array\.from/);
-  assert.match(modalSource, /inputMode="text"/);
-  assert.match(modalSource, /lg:hidden/);
-  assert.match(modalSource, /hidden lg:block/);
-  assert.match(modalSource, /<MobileTimePickerInput[\s\S]*ariaLabel="Time Start"/);
-  assert.match(modalSource, /<TimeSpinnerInput[\s\S]*ariaLabel="Time Start"/);
+test("appointment modal uses one time dropdown on every screen size", () => {
+  // A single <select> replaces the desktop segmented spinner and the mobile
+  // typing picker: on a phone it opens the OS wheel in one tap.
+  assert.match(modalSource, /function TimeSelect/);
+  assert.match(modalSource, /const TIME_OPTIONS = Array\.from/);
+  assert.match(modalSource, /<TimeSelect[\s\S]*ariaLabel="Time Start"/);
+  assert.match(modalSource, /<TimeSelect[\s\S]*ariaLabel="Time Finish"/);
+  // No screen-size split and none of the old picker machinery survives.
+  assert.doesNotMatch(modalSource, /TimeSpinnerInput|MobileTimePickerInput/);
+  assert.doesNotMatch(modalSource, /inputMode="text"/);
+  assert.doesNotMatch(modalSource, /<input type="time"/);
 });
 
-test("desktop time spinner locks page scrolling while focused", () => {
-  assert.match(modalSource, /const timeSpinnerRef = useRef<HTMLDivElement>\(null\)/);
-  assert.match(modalSource, /const \[isScrollLocked, setIsScrollLocked\] = useState\(false\)/);
-  assert.match(modalSource, /document\.addEventListener\("wheel", preventPageWheel, \{ passive: false \}\)/);
-  assert.match(modalSource, /document\.removeEventListener\("wheel", preventPageWheel\)/);
-  assert.match(modalSource, /const preventPageWheel = \(event: globalThis\.WheelEvent\) => \{\s*event\.preventDefault\(\);/);
-  assert.doesNotMatch(modalSource, /contains\(event\.target as Node\)\) event\.preventDefault/);
-  assert.match(modalSource, /onFocus=\{\(\) => setIsScrollLocked\(true\)\}/);
-  assert.match(modalSource, /onMouseDown=\{\(\) => setIsScrollLocked\(true\)\}/);
-  assert.match(modalSource, /onBlur=\{handleBlur\}/);
+test("time dropdown keeps an off-grid saved time selectable", () => {
+  // An appointment saved at 09:24 is not on the 15-minute grid; opening the
+  // form must not silently round or blank it.
+  assert.match(modalSource, /if \(!value \|\| TIME_OPTIONS\.some\(\(option\) => option\.value === value\)\) return TIME_OPTIONS;/);
+  assert.match(modalSource, /\[\.\.\.TIME_OPTIONS, \{ value, label: formatTimeDisplay\(value\) \}\]/);
 });

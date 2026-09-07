@@ -90,7 +90,7 @@ export function PaymentsClient({ canApprove }: { canApprove: boolean }) {
     setActionLoading(paymentId);
     try {
       const res = await fetch(`/api/appointments/${appointmentId}/approve`, { method: "POST" });
-      const data = await res.json();
+      const data = await res.json() as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Approve failed");
       await load();
     } catch (err: unknown) {
@@ -110,7 +110,7 @@ export function PaymentsClient({ canApprove }: { canApprove: boolean }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, rejectReason: rejectReason.trim() || undefined }),
       });
-      const data = await res.json();
+      const data = await res.json() as { error?: string; status: PaymentRecord["status"] };
       if (!res.ok) throw new Error(data.error ?? "Action failed");
 
       // Update local state without full reload

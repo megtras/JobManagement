@@ -87,7 +87,7 @@ export function TeamsClient({ teams, branches, technicians, isSupervisor, userBr
         <div className="flex flex-wrap items-center gap-2">
           {(!isSupervisor || branchFilterId !== "ALL") && (
             <button onClick={() => { setEditing(null); setModal(true); }}
-              className="flex shrink-0 items-center gap-2 bg-[#28a89d] hover:bg-[#1f8c82] text-white text-sm font-medium px-4 py-2 rounded-xl transition">
+              className="flex shrink-0 items-center gap-2 bg-[#151513] hover:bg-[#26251f] text-white text-sm font-medium px-4 py-2 rounded-xl transition">
               <Plus className="w-4 h-4" /> Add
             </button>
           )}

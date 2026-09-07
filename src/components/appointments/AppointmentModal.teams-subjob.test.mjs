@@ -7,19 +7,31 @@ const actionSource = readFileSync(new URL("../../lib/actions/appointments.ts", i
 const teamsActionSource = readFileSync(new URL("../../lib/actions/teams.ts", import.meta.url), "utf8");
 const teamModalSource = readFileSync(new URL("../teams/TeamModal.tsx", import.meta.url), "utf8");
 
-test("modal categorises assets by AC type with per-asset job category, price and remarks", () => {
-  assert.match(modalSource, /const AC_TYPES = \["Wall Mounted", "Cassette", "Exposed", "Ducting", "Wiring"\]/);
+test("modal categorises assets by asset type with per-asset job category, price and remarks", () => {
+  // Asset types are managed in Inventory, never hardcoded in the form.
+  assert.doesNotMatch(modalSource, /const AC_TYPES/);
+  assert.match(modalSource, /getAssetTypePricing\(\)/);
+  assert.match(modalSource, /\{assetTypes\.map\(\(type\) => <option key=\{type\.id\} value=\{type\.name\}>/);
   assert.match(modalSource, /<select value=\{asset\.acType\}/);
   assert.match(modalSource, /<select value=\{asset\.jobCategoryId\}/);
   assert.match(modalSource, /function selectAssetCategory/);
-  // price prefills from the chosen category but stays editable
-  assert.match(modalSource, /unitPrice: price != null \? String\(price\) : ""/);
+  assert.match(modalSource, /function selectAssetType/);
+  // Price prefills from the (type x category) pair but stays editable.
+  assert.match(modalSource, /unitPrice: categoryId \? String\(resolveUnitPrice\(acType, categoryId\)\) : ""/);
   assert.match(modalSource, /type="number"/);
   assert.match(modalSource, /placeholder="Remarks \(optional\)"/);
 });
 
-test("new appointment assets keep the visible default AC type in state", () => {
-  assert.match(modalSource, /return \{ _key: nk\(\), label: "", acType: AC_TYPES\[0\], jobCategoryId: "", unitPrice: "", remarks: "" \};/);
+test("an unpriced type/category pair falls back to the category price", () => {
+  assert.match(modalSource, /const pairPrice = priceByPair\.get\(typeId \+ "::" \+ categoryId\)/);
+  assert.match(modalSource, /return Number\(categoryById\.get\(categoryId\)\?\.price \?\? 0\)/);
+});
+
+test("new appointment assets take their default type from the loaded list", () => {
+  // No module-level default any more; the first loaded type is backfilled once
+  // the Inventory data arrives.
+  assert.match(modalSource, /return \{ _key: nk\(\), label: "", acType: "", jobCategoryId: "", unitPrice: "", remarks: "" \};/);
+  assert.match(modalSource, /const fallback = assetTypes\[0\]\.name;/);
   assert.match(modalSource, /<option value="" disabled>Select category<\/option>/);
 });
 

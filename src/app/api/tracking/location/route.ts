@@ -49,7 +49,7 @@ async function reverseGeocode(lat: number, lng: number) {
       cache: "no-store",
     });
     if (!res.ok) return { area: null, address: null };
-    const data = await res.json();
+    const data = await res.json() as { features?: PhotonReverseFeature[] };
     const feature = data?.features?.[0] as PhotonReverseFeature | undefined;
     const props = feature?.properties;
     if (!props) return { area: null, address: null };
@@ -69,7 +69,7 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json().catch(() => ({}));
+  const body = await req.json().catch(() => ({})) as { lat?: unknown; lng?: unknown };
   const lat = Number(body.lat);
   const lng = Number(body.lng);
   if (!isValidCoordinate(lat, lng)) {

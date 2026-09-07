@@ -47,7 +47,7 @@ export function InstallPrompt() {
     <div className="fixed bottom-16 left-0 right-0 z-50 px-4 pb-2 lg:bottom-6 lg:left-6 lg:right-auto lg:max-w-sm lg:px-0 lg:pb-0">
       <div className="bg-blue-950 text-white rounded-2xl shadow-2xl ring-1 ring-white/10 p-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="font-semibold text-sm">Install GenPlus Aircond</p>
+          <p className="font-semibold text-sm">Install Megtras</p>
           <button onClick={handleDismiss} aria-label="Close" className="text-blue-300 hover:text-white transition ml-2 shrink-0">
             <X className="w-4 h-4" />
           </button>

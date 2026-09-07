@@ -16,7 +16,11 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json().catch(() => ({}));
+  const body = await req.json().catch(() => ({})) as {
+    jobCategoryId?: string;
+    clientAssetId?: string;
+    billingType?: string;
+  };
   const jobCategoryId = typeof body.jobCategoryId === "string" ? body.jobCategoryId : "";
   const clientAssetId = clientGeneratedId(body.clientAssetId, "asset");
   const requestedBillingType: AssetBillingType = body.billingType === "WARRANTY" ? "WARRANTY" : "CHARGEABLE";
@@ -70,33 +74,29 @@ export async function POST(
 
   const billingType: AssetBillingType = appt.billingType === "WARRANTY" ? requestedBillingType : "CHARGEABLE";
 
-  const created = await prisma.$transaction(async (tx) => {
-    const asset = await tx.appointmentAsset.create({
-      data: {
-        ...(clientAssetId ? { id: clientAssetId } : {}),
-        appointment: { connect: { id } },
-        label: "",
-        acType: "Work Item",
-        jobCategory: { connect: { id: category.id } },
-        unitPrice: category.price,
-        billingType,
-        isTroubleshoot: false,
-        remarks: null,
-        propertyType: "Service",
-        workLocationAddress: appt.locationAddress,
-        workLocationLat: appt.locationLat,
-        workLocationLng: appt.locationLng,
-      },
-      include: { jobCategory: { select: { id: true, name: true, price: true, minEvidencePhotos: true } } },
-    });
+  const created = await prisma.appointmentAsset.create({
+    data: {
+      ...(clientAssetId ? { id: clientAssetId } : {}),
+      appointment: { connect: { id } },
+      label: "",
+      acType: "Work Item",
+      jobCategory: { connect: { id: category.id } },
+      unitPrice: category.price,
+      billingType,
+      isTroubleshoot: false,
+      remarks: null,
+      propertyType: "Service",
+      workLocationAddress: appt.locationAddress,
+      workLocationLat: appt.locationLat,
+      workLocationLng: appt.locationLng,
+    },
+    include: { jobCategory: { select: { id: true, name: true, price: true, minEvidencePhotos: true } } },
+  });
 
-    const total = calculateChargeableAssetTotal([...appt.assets, { unitPrice: category.price, billingType }]);
-    await tx.appointment.update({
-      where: { id },
-      data: { totalPrice: total },
-    });
-
-    return asset;
+  const total = calculateChargeableAssetTotal([...appt.assets, { unitPrice: category.price, billingType }]);
+  await prisma.appointment.update({
+    where: { id },
+    data: { totalPrice: total },
   });
 
   return NextResponse.json({

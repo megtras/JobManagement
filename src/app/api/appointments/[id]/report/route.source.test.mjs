@@ -20,11 +20,11 @@ test("completed report editing is restricted to admin, manager and supervisor", 
 });
 
 test("report edits persist signed metadata and after-task content before regenerating the PDF", () => {
-  assert.match(routeSource, /tx\.report\.update/);
+  assert.match(routeSource, /prisma\.report\.update/);
   assert.match(routeSource, /data: \{ technicianName, clientName, reportDate \}/);
-  assert.match(routeSource, /tx\.appointmentAsset\.update/);
+  assert.match(routeSource, /prisma\.appointmentAsset\.update/);
   assert.match(routeSource, /technicianRemark: asset\.technicianRemark \|\| null/);
-  assert.match(routeSource, /tx\.servicePhoto\.update/);
+  assert.match(routeSource, /prisma\.servicePhoto\.update/);
   assert.match(routeSource, /data: \{ label: photo\.label \}/);
   assert.match(routeSource, /pdfUrl = await regenerateServiceReportPdf\(id\)/);
 });

@@ -1,23 +1,23 @@
 import {
   Document, Page, Text, View, Image, StyleSheet,
 } from "@react-pdf/renderer";
-import { GEN_LOGO_DATA_URI } from "./gen-logo-data";
+import { MEGTRAS_LOGO_DATA_URI } from "./megtras-logo-data";
 
 const styles = StyleSheet.create({
   page:    { padding: 40, fontFamily: "Helvetica", fontSize: 10, color: "#1a1a1a" },
   header:  { flexDirection: "row", justifyContent: "space-between", marginBottom: 24 },
-  logo:    { width: 130, height: 45, marginBottom: 6 },
-  title:   { fontSize: 20, fontFamily: "Helvetica-Bold", color: "#1e3a8a" },
+  logo:    { width: 130, height: 20, marginBottom: 6 },
+  title:   { fontSize: 20, fontFamily: "Helvetica-Bold", color: "#151513" },
   sub:     { fontSize: 10, color: "#666", marginTop: 2 },
   companyAddr:  { fontSize: 9, color: "#555", marginTop: 2, lineHeight: 1.3 },
   companyPhone: { fontSize: 9, color: "#555", marginTop: 6 },
   section: { marginBottom: 16 },
   signatureSection: { marginBottom: 16 },
-  sectionTitle: { fontSize: 11, fontFamily: "Helvetica-Bold", color: "#1e3a8a", marginBottom: 8, borderBottom: "1px solid #e5e7eb", paddingBottom: 4 },
+  sectionTitle: { fontSize: 11, fontFamily: "Helvetica-Bold", color: "#151513", marginBottom: 8, borderBottom: "1px solid #e5e7eb", paddingBottom: 4 },
   row:     { flexDirection: "row", marginBottom: 4 },
   label:   { width: 130, color: "#666" },
   value:   { flex: 1, fontFamily: "Helvetica-Bold" },
-  badge:   { backgroundColor: "#dbeafe", color: "#1e3a8a", padding: "2 8", borderRadius: 4, fontSize: 9 },
+  badge:   { backgroundColor: "#FBEFC4", color: "#151513", padding: "2 8", borderRadius: 4, fontSize: 9 },
   sigBox:  { width: 200, height: 80, border: "1px solid #d1d5db", borderRadius: 4, overflow: "hidden" },
   assetBlock: { marginBottom: 14, paddingBottom: 10, borderBottom: "1px solid #f0f0f0" },
   assetNo:    { fontSize: 11, fontFamily: "Helvetica-Bold", color: "#1a1a1a", marginBottom: 5 },
@@ -78,13 +78,13 @@ export function ReportDocument(props: Props) {
   }
 
   return (
-    <Document title="Service Report — GenPlus Aircond">
+    <Document title="Service Report — Megtras">
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Image src={GEN_LOGO_DATA_URI} style={styles.logo} />
-            <Text style={styles.title}>GenPlus Aircond</Text>
+            <Image src={MEGTRAS_LOGO_DATA_URI} style={styles.logo} />
+            <Text style={styles.title}>Megtras</Text>
             <Text style={[styles.companyAddr, { marginTop: 4 }]}>Blok J-03-02, Dataran Glomac,</Text>
             <Text style={styles.companyAddr}>Jalan SS6/18, Ss 6,</Text>
             <Text style={styles.companyAddr}>47301 Petaling Jaya, Selangor</Text>
@@ -174,7 +174,7 @@ export function ReportDocument(props: Props) {
         {/* Total */}
         <View style={{ ...styles.section, flexDirection: "row", justifyContent: "flex-end" }}>
           <View style={{ alignItems: "flex-end" }}>
-            <Text style={{ fontSize: 12, fontFamily: "Helvetica-Bold", color: "#1e3a8a" }}>
+            <Text style={{ fontSize: 12, fontFamily: "Helvetica-Bold", color: "#151513" }}>
               {isFullyFoc ? "Total: FOC" : `Total Chargeable: RM ${totalPrice.toFixed(2)}`}
             </Text>
             {isFullyFoc && (
@@ -211,7 +211,7 @@ export function ReportDocument(props: Props) {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text>GenPlus Aircond — Local Demo</Text>
+          <Text>Megtras — Local Demo</Text>
           <Text>Generated: {reportDate}</Text>
         </View>
       </Page>

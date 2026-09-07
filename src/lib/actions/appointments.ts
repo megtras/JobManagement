@@ -4,8 +4,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import type { Prisma, Role } from "@/generated/prisma/client";
+import type { Role } from "@/generated/prisma/client";
 import { buildWazeLink } from "@/lib/waze";
+import { nextJobNo } from "@/lib/record-numbers";
 import { calculateChargeableAssetTotal, isTroubleshootCategoryName, type AssetBillingType } from "@/lib/appointment-pricing";
 
 async function getSession() {
@@ -102,11 +103,10 @@ async function assertTeamsInBranch(teamIds: string[], branchId: string) {
 }
 
 async function createAppointmentAsset(
-  tx: Prisma.TransactionClient,
   appointmentId: string,
   asset: AppointmentAssetWithCategory
 ) {
-  await tx.appointmentAsset.create({
+  await prisma.appointmentAsset.create({
     data: {
       appointment: { connect: { id: appointmentId } },
       label: asset.label,
@@ -221,40 +221,39 @@ export async function createAppointment(data: {
   const lat = data.locationLat ?? null;
   const lng = data.locationLng ?? null;
   const wazeLink = buildWazeLink(data.locationAddress, lat, lng);
+  const jobNo = await nextJobNo();
 
-  const appointment = await prisma.$transaction(async (tx) => {
-    const appt = await tx.appointment.create({
-      data: {
-        customer: { connect: { id: data.customerId } },
-        branch: { connect: { id: customer.branchId } },
-        ...(primaryCategoryId ? { jobCategory: { connect: { id: primaryCategoryId } } } : {}),
-        ...(data.parentId ? { parent: { connect: { id: data.parentId } } } : {}),
-        teams: { connect: validated.teamIds.map((teamId) => ({ id: teamId })) },
-        jobTitle: validated.jobTitle,
-        date: new Date(data.date),
-        time: data.time,
-        timeFinish: data.timeFinish?.trim() ?? "",
-        locationAddress: data.locationAddress?.trim() ?? "",
-        locationLat: lat,
-        locationLng: lng,
-        locationWazeLink: wazeLink,
-        status: "COMING_SOON",
-        billingType,
-        warrantyNote: normalizeWarrantyNote(data.warrantyNote),
-        totalPrice: total,
-      },
-    });
-
-    for (const asset of assets) {
-      await createAppointmentAsset(tx, appt.id, asset);
-    }
-
-    // Setting an appointment closes the deal: a pending-deal customer becomes closed.
-    if (customer.status !== "CLOSED") {
-      await tx.customer.update({ where: { id: customer.id }, data: { status: "CLOSED" } });
-    }
-    return appt;
+  const appointment = await prisma.appointment.create({
+    data: {
+      jobNo,
+      customer: { connect: { id: data.customerId } },
+      branch: { connect: { id: customer.branchId } },
+      ...(primaryCategoryId ? { jobCategory: { connect: { id: primaryCategoryId } } } : {}),
+      ...(data.parentId ? { parent: { connect: { id: data.parentId } } } : {}),
+      teams: { connect: validated.teamIds.map((teamId) => ({ id: teamId })) },
+      jobTitle: validated.jobTitle,
+      date: new Date(data.date),
+      time: data.time,
+      timeFinish: data.timeFinish?.trim() ?? "",
+      locationAddress: data.locationAddress?.trim() ?? "",
+      locationLat: lat,
+      locationLng: lng,
+      locationWazeLink: wazeLink,
+      status: "COMING_SOON",
+      billingType,
+      warrantyNote: normalizeWarrantyNote(data.warrantyNote),
+      totalPrice: total,
+    },
   });
+
+  for (const asset of assets) {
+    await createAppointmentAsset(appointment.id, asset);
+  }
+
+  // Setting an appointment closes the deal: a pending-deal customer becomes closed.
+  if (customer.status !== "CLOSED") {
+    await prisma.customer.update({ where: { id: customer.id }, data: { status: "CLOSED" } });
+  }
 
   revalidatePath("/appointments");
   revalidatePath("/customers");
@@ -299,8 +298,7 @@ export async function updateAppointment(
   const lng = data.locationLng ?? null;
   const wazeLink = buildWazeLink(data.locationAddress, lat, lng);
 
-  await prisma.$transaction(async (tx) => {
-    await tx.appointment.update({
+  await prisma.appointment.update({
       where: { id },
       data: {
         jobCategory: primaryCategoryId ? { connect: { id: primaryCategoryId } } : { disconnect: true },
@@ -320,11 +318,11 @@ export async function updateAppointment(
       },
     });
 
-    if (total <= 0) {
-      await tx.payment.deleteMany({ where: { appointmentId: id } });
-    }
+  if (total <= 0) {
+    await prisma.payment.deleteMany({ where: { appointmentId: id } });
+  }
 
-    const existingAssets = await tx.appointmentAsset.findMany({
+  const existingAssets = await prisma.appointmentAsset.findMany({
       where: { appointmentId: id },
       select: {
         id: true,
@@ -361,13 +359,13 @@ export async function updateAppointment(
         sameSignatureExisting?.id;
 
       if (targetAssetId) {
-        await tx.appointmentAsset.update({
+        await prisma.appointmentAsset.update({
           where: { id: targetAssetId },
           data: appointmentAssetData(asset),
         });
         retainedAssetIds.add(targetAssetId);
       } else {
-        await createAppointmentAsset(tx, id, asset);
+        await createAppointmentAsset(id, asset);
       }
     }
 
@@ -377,12 +375,10 @@ export async function updateAppointment(
       .map((asset) => asset.id);
 
     if (removableAssetIds.length > 0) {
-      await tx.appointmentAsset.deleteMany({
+      await prisma.appointmentAsset.deleteMany({
         where: { appointmentId: id, id: { in: removableAssetIds } },
       });
     }
-  });
-
   revalidatePath("/appointments");
   revalidatePath(`/appointments/${id}`);
   revalidatePath("/schedule");
@@ -421,15 +417,13 @@ export async function deleteAppointment(id: string) {
   // Several child relations have no ON DELETE CASCADE, so remove them first.
   // Photos must go before assets (a photo can reference an asset). Sub-jobs are
   // unlinked (kept as standalone) and notifications are detached.
-  await prisma.$transaction([
-    prisma.servicePhoto.deleteMany({ where: { appointmentId: id } }),
-    prisma.checkIn.deleteMany({ where: { appointmentId: id } }),
-    prisma.payment.deleteMany({ where: { appointmentId: id } }),
-    prisma.report.deleteMany({ where: { appointmentId: id } }),
-    prisma.notification.updateMany({ where: { relatedAppointmentId: id }, data: { relatedAppointmentId: null } }),
-    prisma.appointment.updateMany({ where: { parentId: id }, data: { parentId: null } }),
-    prisma.appointment.delete({ where: { id } }),
-  ]);
+  await prisma.servicePhoto.deleteMany({ where: { appointmentId: id } });
+  await prisma.checkIn.deleteMany({ where: { appointmentId: id } });
+  await prisma.payment.deleteMany({ where: { appointmentId: id } });
+  await prisma.report.deleteMany({ where: { appointmentId: id } });
+  await prisma.notification.updateMany({ where: { relatedAppointmentId: id }, data: { relatedAppointmentId: null } });
+  await prisma.appointment.updateMany({ where: { parentId: id }, data: { parentId: null } });
+  await prisma.appointment.delete({ where: { id } });
   revalidatePath("/appointments");
   revalidatePath("/customers");
   revalidatePath("/schedule");

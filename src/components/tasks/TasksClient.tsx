@@ -197,7 +197,7 @@ export function TasksClient() {
             {TASK_FILTERS.map((item) => (
               <button key={item.value} type="button" onClick={() => changeFilter(item.value)}
                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
-                  filter === item.value ? "bg-[#28a89d] text-white" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  filter === item.value ? "bg-[#151513] text-white" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}>
                 {item.label}
               </button>

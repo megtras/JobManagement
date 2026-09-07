@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { GenPlusLogo } from "@/components/brand/GenPlusLogo";
+import { MegtrasLogo } from "@/components/brand/MegtrasLogo";
 import { NotificationBell } from "./NotificationBell";
 
 export function TopBar() {
@@ -12,15 +12,15 @@ export function TopBar() {
       {/* Logo */}
       <div className="flex items-center gap-2">
         <div className="w-11 h-9 rounded-lg bg-white border border-gray-200 flex items-center justify-center px-1.5">
-          <GenPlusLogo className="w-full h-full" />
+          <MegtrasLogo className="w-full h-full" />
         </div>
-        <span className="font-bold text-sm text-blue-950">GenPlus Aircond</span>
+        <span className="font-bold text-sm text-blue-950">Megtras</span>
       </div>
 
       {/* Actions */}
       <div className="flex items-center gap-2">
         <NotificationBell className="w-9 h-9 rounded-full hover:bg-gray-100 transition text-gray-600" />
-        <div className="w-8 h-8 rounded-full bg-[#28a89d] flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full bg-[#151513] flex items-center justify-center">
           <span className="text-white text-xs font-bold">
             {(session?.user?.name)?.[0]?.toUpperCase() ?? "?"}
           </span>

@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
 import { revalidatePath } from "next/cache";
-import sharp from "sharp";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadPublicUrl } from "@/lib/upload-urls";
+import { putUpload } from "@/lib/storage";
 
 export async function POST(
   req: Request,
@@ -37,28 +35,17 @@ export async function POST(
     return NextResponse.json({ error: "Payment proof photo is required" }, { status: 400 });
   }
 
-  const uploadDir = path.join(process.cwd(), process.env.UPLOAD_DIR ?? "./public/uploads", "photos");
-  await mkdir(uploadDir, { recursive: true });
   const receiptBuffer = Buffer.from(await receipt.arrayBuffer());
   const isPdfReceipt = receipt.type === "application/pdf" || receipt.name.toLowerCase().endsWith(".pdf");
+  if (!isPdfReceipt && !receipt.type.startsWith("image/")) {
+    return NextResponse.json({ error: "Please upload a valid image or PDF file." }, { status: 400 });
+  }
+  const imageExtension = receipt.type === "image/png" ? "png" : receipt.type === "image/webp" ? "webp" : "jpg";
   const filename = isPdfReceipt
     ? `${payment.appointmentId}-office-receipt-${Date.now()}.pdf`
-    : `${payment.appointmentId}-office-receipt-${Date.now()}.jpg`;
+    : `${payment.appointmentId}-office-receipt-${Date.now()}.${imageExtension}`;
 
-  if (isPdfReceipt) {
-    await writeFile(path.join(uploadDir, filename), receiptBuffer);
-  } else {
-    let displayableReceipt: Buffer;
-    try {
-      displayableReceipt = await sharp(receiptBuffer)
-        .rotate()
-        .jpeg({ quality: 85 })
-        .toBuffer();
-    } catch {
-      return NextResponse.json({ error: "Please upload a valid image file." }, { status: 400 });
-    }
-    await writeFile(path.join(uploadDir, filename), displayableReceipt);
-  }
+  await putUpload("photos", filename, receiptBuffer, isPdfReceipt ? "application/pdf" : receipt.type);
   const receiptPhotoUrl = uploadPublicUrl("photos", filename);
 
   await prisma.payment.update({

@@ -13,6 +13,8 @@ test("appointment create and edit persist per-asset billing and chargeable total
   assert.match(modalSource, /const unitPrice = rawUnitPrice === "" \? categoryPrice : Number\(rawUnitPrice\)/);
   assert.match(modalSource, /const safeUnitPrice = Number\.isFinite\(unitPrice\) \? unitPrice : 0/);
   assert.match(modalSource, /billingType === "WARRANTY" && safeUnitPrice <= 0\s*\? "WARRANTY"/);
-  assert.match(modalSource, /\[locations, categoryById, billingType\]/);
+  // Pricing now resolves through the (asset type x category) matrix, so the
+  // memo depends on the resolver rather than on categoryById directly.
+  assert.match(modalSource, /\[locations, resolveUnitPrice, billingType\]/);
   assert.match(modalSource, /billingType: asset\.billingType,/);
 });

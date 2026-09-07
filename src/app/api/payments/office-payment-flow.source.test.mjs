@@ -46,18 +46,19 @@ test("staff can upload and cancel office payment proof from appointment detail",
   assert.doesNotMatch(appointmentDetail, /canApprovePayments && p\.method === "OFFICE" && !p\.receiptPhotoUrl/);
 });
 
-test("office payment proof uploads are normalized to browser-displayable JPEG", () => {
-  assert.match(receiptRoute, /import sharp from "sharp"/);
+test("office payment proof images are validated and stored in R2 without native processing", () => {
+  assert.doesNotMatch(receiptRoute, /import sharp from "sharp"/);
   assert.match(receiptRoute, /const receiptBuffer = Buffer\.from\(await receipt\.arrayBuffer\(\)\)/);
-  assert.match(receiptRoute, /await sharp\(receiptBuffer\)[\s\S]*\.rotate\(\)[\s\S]*\.jpeg\(\{ quality: 85 \}\)[\s\S]*\.toBuffer\(\)/);
-  assert.match(receiptRoute, /office-receipt-\$\{Date\.now\(\)\}\.jpg/);
-  assert.match(receiptRoute, /Please upload a valid image file/);
+  assert.match(receiptRoute, /!receipt\.type\.startsWith\("image\/"\)/);
+  assert.match(receiptRoute, /const imageExtension = receipt\.type === "image\/png" \? "png" : receipt\.type === "image\/webp" \? "webp" : "jpg"/);
+  assert.match(receiptRoute, /await putUpload\("photos", filename, receiptBuffer/);
+  assert.match(receiptRoute, /Please upload a valid image or PDF file/);
 });
 
 test("office payment proof can be uploaded as a PDF without image conversion", () => {
   assert.match(receiptRoute, /receipt\.type === "application\/pdf"/);
   assert.match(receiptRoute, /office-receipt-\$\{Date\.now\(\)\}\.pdf/);
-  assert.match(receiptRoute, /await writeFile\(path\.join\(uploadDir, filename\), receiptBuffer\)/);
+  assert.match(receiptRoute, /await putUpload\("photos", filename, receiptBuffer, isPdfReceipt \? "application\/pdf" : receipt\.type\)/);
 
   assert.match(appointmentDetail, /accept="image\/\*,application\/pdf"/);
   assert.match(appointmentDetail, /officeReceiptFile\?\.type === "application\/pdf"/);

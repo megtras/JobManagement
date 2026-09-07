@@ -96,7 +96,7 @@ export function UsersClient({ users, branches, currentUserId, isSupervisor }: Pr
             <div className="flex max-w-full rounded-lg border border-gray-200 bg-white overflow-x-auto text-sm">
               {ROLE_FILTERS.map((r) => (
                 <button key={r.value} onClick={() => setRoleFilter(r.value)}
-                  className={`shrink-0 px-3 py-1.5 font-medium transition ${roleFilter === r.value ? "bg-[#28a89d] text-white" : "text-gray-600 hover:bg-gray-50"} ${r.value !== "ALL" ? "border-l border-gray-200" : ""}`}>
+                  className={`shrink-0 px-3 py-1.5 font-medium transition ${roleFilter === r.value ? "bg-[#151513] text-white" : "text-gray-600 hover:bg-gray-50"} ${r.value !== "ALL" ? "border-l border-gray-200" : ""}`}>
                   {r.label}
                 </button>
               ))}
@@ -104,7 +104,7 @@ export function UsersClient({ users, branches, currentUserId, isSupervisor }: Pr
           </div>
         </div>
         <button onClick={() => { setEditing(null); setModalOpen(true); }}
-          className="flex shrink-0 items-center justify-center gap-2 bg-[#28a89d] hover:bg-[#1f8c82] text-white text-sm font-medium px-4 py-2.5 rounded-xl transition">
+          className="flex shrink-0 items-center justify-center gap-2 bg-[#151513] hover:bg-[#26251f] text-white text-sm font-medium px-4 py-2.5 rounded-xl transition">
           <UserPlus className="w-4 h-4" /> Add User
         </button>
       </div>

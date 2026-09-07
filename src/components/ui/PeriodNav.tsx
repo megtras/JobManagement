@@ -133,9 +133,9 @@ export function PeriodNav({ view, cursor, onChange }: Props) {
                     onClick={() => selectCalendarDate(date)}
                     className={`h-9 rounded-lg text-sm transition ${
                       isSelected
-                        ? "bg-[#28a89d] font-semibold text-white"
+                        ? "bg-[#151513] font-semibold text-white"
                         : isToday
-                          ? "border border-[#28a89d] font-semibold text-[#168b82]"
+                          ? "border border-[#F2B705] font-semibold text-[#151513]"
                           : isCurrentMonth
                             ? "text-gray-800 hover:bg-gray-50"
                             : "text-gray-300 hover:bg-gray-50"
@@ -155,7 +155,7 @@ export function PeriodNav({ view, cursor, onChange }: Props) {
           <button key={v.value} type="button"
             onClick={() => onChange({ view: v.value, cursor: v.value === "TODAY" ? new Date() : cursor })}
             className={`px-3 py-1.5 text-sm font-medium rounded-md transition ${
-              view === v.value ? "bg-[#28a89d] text-white" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              view === v.value ? "bg-[#151513] text-white" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
             }`}>
             {v.label}
           </button>

@@ -48,7 +48,7 @@ export function TeamsTechniciansClient({ teams, teamTechnicians, technicians, br
         {TABS.map((t) => (
           <button key={t.value} type="button" onClick={() => setTab(t.value)}
             className={`px-4 py-1.5 text-sm font-medium rounded-md transition ${
-              tab === t.value ? "bg-[#28a89d] text-white" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              tab === t.value ? "bg-[#151513] text-white" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
             }`}>
             {t.label}
           </button>
