@@ -1990,12 +1990,8 @@ export function TaskDetailClient({
                       </div>
                       <p className="font-semibold text-blue-700">RM {Number(asset.unitPrice ?? 0).toFixed(2)}</p>
                     </div>
-                    {asset.remarks && (
-                      <p className="mt-2 text-gray-600"><span className="font-medium text-gray-400">Remark:</span> {asset.remarks}</p>
-                    )}
-                    {asset.technicianRemark && (
-                      <p className="mt-1 text-gray-600"><span className="font-medium text-gray-400">Technician Remark:</span> {asset.technicianRemark}</p>
-                    )}
+                    <p className="mt-2 whitespace-pre-wrap text-gray-600"><span className="font-medium text-gray-400">Remark:</span> {asset.remarks || "-"}</p>
+                    <p className="mt-1 whitespace-pre-wrap text-gray-600"><span className="font-medium text-gray-400">Technician Remark:</span> {asset.technicianRemark || "-"}</p>
                   </div>
                 )) : (
                   <p className="rounded-lg border border-dashed border-gray-200 p-3 text-sm text-gray-400">No previous assets recorded.</p>
