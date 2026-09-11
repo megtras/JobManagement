@@ -40,18 +40,18 @@ test("appointment payment status uses a structured toggle instead of wrapping in
   assert.doesNotMatch(paymentStatus[0], /flex flex-wrap items-center gap-2/);
 });
 
-test("appointment total header aligns with right-aligned currency values", () => {
+test("appointment total header aligns with left-aligned currency values", () => {
   const source = readFileSync(new URL("../appointments/AppointmentsClient.tsx", import.meta.url), "utf8");
 
-  assert.match(source, /<th className="px-4 py-3 w-36 text-right hidden lg:table-cell">Total<\/th>/);
-  assert.match(source, /<div className="text-right font-semibold text-blue-700 whitespace-nowrap">\{totalLabel\(a\)\}<\/div>/);
+  assert.match(source, /<th className="px-4 py-3 w-36 text-left">Total<\/th>/);
+  assert.match(source, /<div className="font-semibold text-blue-700 whitespace-nowrap">RM \{a\.totalPrice\.toFixed\(2\)\}<\/div>/);
 });
 
 test("appointment payment columns separate type from status", () => {
   const source = readFileSync(new URL("../appointments/AppointmentsClient.tsx", import.meta.url), "utf8");
 
-  assert.match(source, /<th className="px-4 py-3 w-36 hidden xl:table-cell">Payment Type<\/th>/);
-  assert.match(source, /<th className="px-4 py-3 w-36 hidden xl:table-cell">Payment Status<\/th>/);
+  assert.match(source, /<th className="px-4 py-3 w-36">Payment Type<\/th>/);
+  assert.match(source, /<th className="px-4 py-3 w-40">Payment Status<\/th>/);
   assert.match(source, /const paymentType = \(a: AppointmentRow\) => \{/);
   assert.match(source, /const paymentStatus = \(a: AppointmentRow\) => \{/);
 });

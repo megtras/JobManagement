@@ -355,6 +355,7 @@ export function AppointmentsClient({
         </div>
       );
     }
+    if (isFullyFoc) return <div className="text-sm font-semibold text-teal-700">FOC</div>;
     if (!a.payment) return <div className="text-sm text-gray-300">-</div>;
     const hasPop = !!a.payment.receiptPhotoUrl;
     const receiptUrl = hasPop ? normalizeUploadUrl(a.payment.receiptPhotoUrl) : "";
@@ -388,9 +389,8 @@ export function AppointmentsClient({
   };
 
   const paymentStatus = (a: AppointmentRow) => {
-    const isWarranty = a.billingType === "WARRANTY";
     const isFullyFoc = a.totalPrice <= 0;
-    if (isWarranty && isFullyFoc) {
+    if (isFullyFoc) {
       return (
         <div data-payment-status className="inline-flex rounded-full bg-[#F2B705]/10 px-2.5 py-1 text-xs font-semibold text-[#151513]">
           Not Required
@@ -504,7 +504,7 @@ export function AppointmentsClient({
 
       <ResponsiveListShell>
         <DesktopTable>
-          <table className="w-full table-fixed text-sm">
+          <table className="w-full min-w-[1360px] table-fixed text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
                 <th className="px-4 py-3 w-12">No.</th>
@@ -512,10 +512,10 @@ export function AppointmentsClient({
                 <th className="px-4 py-3">Appointment</th>
                 <th className="px-4 py-3 w-32">Job Status</th>
                 <th className="px-4 py-3 w-40">Schedule</th>
-                <th className="px-4 py-3 w-36 text-right hidden lg:table-cell">Total</th>
-                <th className="px-4 py-3 w-36 hidden xl:table-cell">Payment Type</th>
-                <th className="px-4 py-3 w-36 hidden xl:table-cell">Payment Status</th>
-                <th className="px-4 py-3 w-40"></th>
+                <th className="px-4 py-3 w-36 text-left">Total</th>
+                <th className="px-4 py-3 w-36">Payment Type</th>
+                <th className="px-4 py-3 w-40">Payment Status</th>
+                <th className="pl-6 pr-4 py-3 w-56"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 align-top">
@@ -561,17 +561,17 @@ export function AppointmentsClient({
                       <div className="text-xs text-gray-400">{a.time}{a.timeFinish ? `-${a.timeFinish}` : ""}</div>
                       <div className="mt-1 hidden text-xs text-gray-500 truncate lg:block" title={fullTeamNames || undefined}>{names || "No team"}</div>
                     </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      <div className="text-right font-semibold text-blue-700 whitespace-nowrap">{totalLabel(a)}</div>
+                    <td className="px-4 py-3 text-left tabular-nums">
+                      <div className="font-semibold text-blue-700 whitespace-nowrap">RM {a.totalPrice.toFixed(2)}</div>
                       {a.approvedAt && (
-                        <span className="mt-1 flex items-center justify-end gap-1 text-xs font-medium text-green-700">
+                        <span className="mt-1 flex items-center justify-start gap-1 text-xs font-medium text-green-700">
                           <CheckCircle2 className="w-3 h-3" /> Closed
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 hidden xl:table-cell">{paymentType(a)}</td>
-                    <td className="px-4 py-3 hidden xl:table-cell">{paymentStatus(a)}</td>
-                    <td className="px-4 py-3">{actions(a)}</td>
+                    <td className="px-4 py-3">{paymentType(a)}</td>
+                    <td className="px-4 py-3">{paymentStatus(a)}</td>
+                    <td className="pl-6 pr-4 py-3">{actions(a)}</td>
                   </tr>
                 );
               })}
@@ -614,7 +614,7 @@ export function AppointmentsClient({
                   <RecordMeta label="Date" value={formatDate(a.date)} />
                   <RecordMeta label="Time" value={<>{a.time}{a.timeFinish ? `-${a.timeFinish}` : ""}</>} />
                   <RecordMeta label="Team" value={<span title={fullTeamNames || undefined}>{names || <span className="text-gray-300">No team</span>}</span>} />
-                  <RecordMeta label="Total" value={<span className="font-semibold text-blue-700">{totalLabel(a)}</span>} />
+                  <RecordMeta label="Total" value={<span className="font-semibold tabular-nums text-blue-700">RM {a.totalPrice.toFixed(2)}</span>} />
                   {isSupervisor && <RecordMeta label="Branch" value={a.branch.name} />}
                   <RecordMeta label="Location" value={a.locationAddress} className={isSupervisor ? "" : "col-span-2"} />
                   <RecordMeta label="Payment Type" value={paymentType(a)} />
