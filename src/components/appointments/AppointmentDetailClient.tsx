@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   MapPin, Clock, Navigation, ExternalLink, Building2,
   CheckCircle2, Camera, CreditCard, FileText, Download,
@@ -239,6 +239,11 @@ export function AppointmentDetailClient({
   const [pushCheckInLoading, setPushCheckInLoading] = useState(false);
   const [reportEditDraft, setReportEditDraft] = useState<ReportEditDraft | null>(null);
   const [reportSaving, setReportSaving] = useState(false);
+  const [reportPhotoFiles, setReportPhotoFiles] = useState<Record<string, { file: File; preview: string }>>({});
+  const reportPhotoPreviewUrls = useRef<string[]>([]);
+  useEffect(() => () => {
+    reportPhotoPreviewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+  }, []);
   const [reportFeedback, setReportFeedback] = useState<ReportFeedback | null>(null);
 
   // Lightbox
@@ -450,6 +455,7 @@ export function AppointmentDetailClient({
 
   function beginReportEdit() {
     if (!appt?.report) return;
+    setReportPhotoFiles({});
     setReportFeedback(null);
     setReportEditDraft({
       technicianName: appt.report.technicianName,
@@ -489,16 +495,21 @@ export function AppointmentDetailClient({
     setReportSaving(true);
     setReportFeedback(null);
     try {
+      const form = new FormData();
+      form.set("report", JSON.stringify(reportEditDraft));
+      for (const [photoId, replacement] of Object.entries(reportPhotoFiles)) {
+        form.set(`photo:${photoId}`, replacement.file);
+      }
       const response = await fetch(`/api/appointments/${appointmentId}/report`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(reportEditDraft),
+        body: form,
       });
       const data = await response.json().catch(() => ({})) as { error?: string; warning?: string };
       if (!response.ok) throw new Error(data.error ?? "Could not save report.");
 
       await load();
       setReportEditDraft(null);
+      setReportPhotoFiles({});
       setReportFeedback({
         tone: data.warning ? "warning" : "success",
         message: data.warning ?? "Report saved and PDF updated.",
@@ -1086,32 +1097,58 @@ export function AppointmentDetailClient({
                   {reportEditDraft.photos.length > 0 && (
                     <div className="space-y-3">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Photo names</p>
-                        <p className="mt-0.5 text-xs text-gray-400">These labels appear below evidence photos in the PDF.</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Report photos</p>
+                        <p className="mt-0.5 text-xs text-gray-400">Replace photos or edit their labels, then Save report to update the PDF. JPG, PNG or WebP, up to 10 MB per photo.</p>
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2">
                         {reportEditDraft.photos.map((draftPhoto, index) => {
                           const photo = appt.servicePhotos.find((item) => item.id === draftPhoto.id);
                           return (
-                            <label key={draftPhoto.id} className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-2.5">
+                            <div key={draftPhoto.id} className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-2.5">
                               {photo && (
                                 <img
-                                  src={normalizeUploadUrl(photo.photoUrl)}
+                                  src={reportPhotoFiles[draftPhoto.id]?.preview ?? normalizeUploadUrl(photo.photoUrl)}
                                   alt="Evidence preview"
-                                  className="h-12 w-12 shrink-0 rounded-lg border border-gray-200 object-cover"
+                                  className="h-20 w-20 shrink-0 rounded-lg border border-gray-200 object-cover"
                                 />
                               )}
                               <span className="min-w-0 flex-1 space-y-1">
                                 <span className="block text-[11px] font-medium text-gray-500">Photo {index + 1}</span>
                                 <input
+                                  aria-label={`Photo ${index + 1} name`}
+                                  disabled={reportSaving}
                                   maxLength={160}
                                   value={draftPhoto.label}
                                   onChange={(event) => updateReportPhotoLabel(draftPhoto.id, event.target.value)}
                                   placeholder={`Photo ${index + 1}`}
                                   className="w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm text-gray-800 outline-none transition focus:border-[#F2B705] focus:ring-2 focus:ring-[#F2B705]/30"
                                 />
+                                <label className={`inline-flex items-center gap-1.5 rounded-md border border-teal-200 px-2.5 py-1.5 text-xs font-semibold text-teal-800 ${reportSaving ? "opacity-50" : "cursor-pointer hover:bg-teal-50"}`}>
+                                  <Camera className="h-3.5 w-3.5" /> Replace photo
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    className="sr-only"
+                                    aria-label={`Replace photo ${index + 1}`}
+                                    disabled={reportSaving}
+                                    onChange={(event) => {
+                                      const file = event.target.files?.[0];
+                                      event.target.value = "";
+                                      if (!file) return;
+                                      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024 || !file.size) {
+                                        setReportFeedback({ tone: "error", message: "Choose a JPG, PNG or WebP photo up to 10 MB." });
+                                        return;
+                                      }
+                                      const preview = URL.createObjectURL(file);
+                                      reportPhotoPreviewUrls.current.push(preview);
+                                      setReportPhotoFiles((current) => ({ ...current, [draftPhoto.id]: { file, preview } }));
+                                      setReportFeedback(null);
+                                    }}
+                                  />
+                                </label>
+                                {reportPhotoFiles[draftPhoto.id] && <span className="block text-xs text-teal-700">New photo selected — save report to upload.</span>}
                               </span>
-                            </label>
+                            </div>
                           );
                         })}
                       </div>
@@ -1123,6 +1160,7 @@ export function AppointmentDetailClient({
                       type="button"
                       onClick={() => {
                         setReportEditDraft(null);
+                        setReportPhotoFiles({});
                         setReportFeedback(null);
                       }}
                       disabled={reportSaving}

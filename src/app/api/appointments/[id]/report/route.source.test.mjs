@@ -24,8 +24,11 @@ test("report edits persist signed metadata and after-task content before regener
   assert.match(routeSource, /data: \{ technicianName, clientName, reportDate \}/);
   assert.match(routeSource, /prisma\.appointmentAsset\.update/);
   assert.match(routeSource, /technicianRemark: asset\.technicianRemark \|\| null/);
+  // D1 has no interactive transactions, so the writes run directly on prisma
+  // rather than through a tx client.
   assert.match(routeSource, /prisma\.servicePhoto\.update/);
-  assert.match(routeSource, /data: \{ label: photo\.label \}/);
+  assert.doesNotMatch(routeSource, /\$transaction/);
+  assert.match(routeSource, /data: \{ label: photo\.label, .*replacementUrls/);
   assert.match(routeSource, /pdfUrl = await regenerateServiceReportPdf\(id\)/);
 });
 
