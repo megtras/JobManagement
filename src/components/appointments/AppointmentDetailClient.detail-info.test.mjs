@@ -53,12 +53,18 @@ test("appointment detail and reports show orphaned work progress photos after as
   assert.match(detailSource, /const visibleEvidence = assetEvidence\.length > 0[\s\S]*: asset\.id === firstAssetId \? orphanEvidencePhotos : \[\]/);
   assert.match(detailSource, /visibleEvidence\.map\(\(p, photoIndex\)/);
 
-  for (const source of [reportRouteSource, regenerateReportSource]) {
-    assert.match(source, /const orphanEvidence: \{ src: string; label: string \}\[\] = \[\]/);
-    assert.match(source, /if \(!photo\.assetId\) \{\s*orphanEvidence\.push\(\{ src: dataUrl, label: photo\.label \|\| "" \}\);\s*continue;\s*\}/);
-    assert.match(source, /const firstAssetId = appt\.assets\[0\]\?\.id \?\? null/);
-    assert.match(source, /photos: evidenceByAsset\.get\([^)]*\.id\) \?\? \([^)]*\.id === firstAssetId \? orphanEvidence : \[\]\)/);
-  }
+  // Initial task report submit still folds orphan evidence into the first asset.
+  assert.match(reportRouteSource, /const orphanEvidence: \{ src: string; label: string \}\[\] = \[\]/);
+  assert.match(reportRouteSource, /if \(!photo\.assetId\) \{\s*orphanEvidence\.push\(\{ src: dataUrl, label: photo\.label \|\| "" \}\);\s*continue;\s*\}/);
+  assert.match(reportRouteSource, /const firstAssetId = appt\.assets\[0\]\?\.id \?\? null/);
+  assert.match(reportRouteSource, /photos: evidenceByAsset\.get\([^)]*\.id\) \?\? \([^)]*\.id === firstAssetId \? orphanEvidence : \[\]\)/);
+
+  // After asset-preserving edits, the regenerated report surfaces orphan evidence
+  // in a dedicated General Report Photos section instead of the first asset.
+  assert.match(regenerateReportSource, /const orphanEvidence: \{ src: string; label: string \}\[\] = \[\]/);
+  assert.match(regenerateReportSource, /if \(!photo\.assetId\) \{\s*orphanEvidence\.push\(\{ src: dataUrl, label: photo\.label \|\| "" \}\);\s*continue;\s*\}/);
+  assert.match(regenerateReportSource, /photos: evidenceByAsset\.get\(asset\.id\) \?\? \[\]/);
+  assert.match(regenerateReportSource, /generalPhotos: orphanEvidence/);
 });
 
 test("appointment detail keeps desktop pdf download and adds a closable in-app viewer for mobile pwa", () => {

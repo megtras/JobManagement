@@ -355,7 +355,7 @@ export function AppointmentsClient({
         </div>
       );
     }
-    if (isFullyFoc) return <div className="text-sm font-semibold text-teal-700">FOC</div>;
+    if (isFullyFoc) return <div className="text-sm font-semibold text-[#151513]">FOC</div>;
     if (!a.payment) return <div className="text-sm text-gray-300">-</div>;
     const hasPop = !!a.payment.receiptPhotoUrl;
     const receiptUrl = hasPop ? normalizeUploadUrl(a.payment.receiptPhotoUrl) : "";

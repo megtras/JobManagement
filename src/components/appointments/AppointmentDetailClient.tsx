@@ -9,6 +9,7 @@ import {
   Users, CopyPlus, Pencil, Save,
 } from "lucide-react";
 import { AppointmentModal } from "./AppointmentModal";
+import { ReportAssetEditor, type ReportAssetDraft } from "./ReportAssetEditor";
 import { resolveUrgent } from "@/lib/actions/appointments";
 import { isPdfReceiptUrl } from "@/lib/receipt-files";
 import { normalizeUploadUrl } from "@/lib/upload-urls";
@@ -24,7 +25,8 @@ interface Asset {
   billingType?: "CHARGEABLE" | "WARRANTY" | null;
   remarks?: string | null;
   technicianRemark?: string | null;
-  jobCategory?: { name: string } | null;
+  jobCategory?: { id?: string; name: string } | null;
+  jobCategoryId?: string | null;
   additionalAddress?: string | null;
   propertyType?: string | null;
   workLocationAddress?: string | null;
@@ -110,8 +112,10 @@ interface ReportEditDraft {
   technicianName: string;
   clientName: string;
   reportDate: string;
-  assets: Array<{ id: string; technicianRemark: string }>;
-  photos: Array<{ id: string; label: string }>;
+  assets: ReportAssetDraft[];
+  photos: Array<{ id: string; label: string; assetId: string | null; isNew?: boolean }>;
+  deletedAssetIds: string[];
+  deletedPhotoIds: string[];
 }
 
 interface ReportFeedback {
@@ -455,6 +459,7 @@ export function AppointmentDetailClient({
 
   function beginReportEdit() {
     if (!appt?.report) return;
+    clearReportPhotoPreviews();
     setReportPhotoFiles({});
     setReportFeedback(null);
     setReportEditDraft({
@@ -463,19 +468,87 @@ export function AppointmentDetailClient({
       reportDate: reportDateInputValue(appt.report.reportDate),
       assets: appt.assets.map((asset) => ({
         id: asset.id,
+        label: asset.label,
+        acType: asset.acType ?? "",
+        jobCategoryId: asset.jobCategoryId ?? asset.jobCategory?.id ?? "",
+        unitPrice: String(asset.unitPrice ?? 0),
+        billingType: asset.billingType ?? "CHARGEABLE",
+        remarks: asset.remarks ?? "",
+        additionalAddress: asset.additionalAddress ?? "",
+        propertyType: asset.propertyType ?? "",
+        workLocationAddress: asset.workLocationAddress ?? "",
         technicianRemark: asset.technicianRemark ?? "",
       })),
       photos: appt.servicePhotos
         .filter((photo) => photo.type === "EVIDENCE")
-        .map((photo) => ({ id: photo.id, label: photo.label ?? "" })),
+        .map((photo) => ({ id: photo.id, label: photo.label ?? "", assetId: photo.assetId ?? null })),
+      deletedAssetIds: [],
+      deletedPhotoIds: [],
     });
   }
 
-  function updateReportAssetRemark(assetId: string, technicianRemark: string) {
+  function clearReportPhotoPreviews() {
+    reportPhotoPreviewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+    reportPhotoPreviewUrls.current = [];
+  }
+
+  function updateReportAsset(assetId: string, patch: Partial<ReportAssetDraft>) {
     setReportEditDraft((current) => current ? {
       ...current,
-      assets: current.assets.map((asset) => asset.id === assetId ? { ...asset, technicianRemark } : asset),
+      assets: current.assets.map((asset) => asset.id === assetId ? { ...asset, ...patch } : asset),
     } : current);
+  }
+
+  function removeReportAsset(assetId: string) {
+    setReportEditDraft((current) => current ? {
+      ...current,
+      assets: current.assets.filter((asset) => asset.id !== assetId),
+      photos: current.photos.map((photo) => photo.assetId === assetId ? { ...photo, assetId: null } : photo),
+      deletedAssetIds: current.assets.find((asset) => asset.id === assetId)?.isNew ? current.deletedAssetIds : [...current.deletedAssetIds, assetId],
+    } : current);
+  }
+
+  function removeReportPhoto(photoId: string) {
+    setReportEditDraft((current) => current ? {
+      ...current,
+      photos: current.photos.filter((photo) => photo.id !== photoId),
+      deletedPhotoIds: current.photos.find((photo) => photo.id === photoId)?.isNew ? current.deletedPhotoIds : [...current.deletedPhotoIds, photoId],
+    } : current);
+    setReportPhotoFiles((current) => {
+      const next = { ...current };
+      delete next[photoId];
+      return next;
+    });
+  }
+
+  async function selectReportPhoto(file: File, photoId?: string) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024 || !file.size) {
+      setReportFeedback({ tone: "error", message: "Choose a JPG, PNG or WebP photo up to 10 MB." });
+      return;
+    }
+    // Upstream rotated and downscaled with sharp on the server; sharp cannot
+    // run on Workers, so the browser does it before upload. This also applies
+    // the EXIF orientation, which is what stops phone photos arriving sideways.
+    let upload = file;
+    try {
+      const { default: imageCompression } = await import("browser-image-compression");
+      upload = await imageCompression(file, {
+        maxWidthOrHeight: 2000,
+        maxSizeMB: 2,
+        useWebWorker: true,
+        fileType: file.type,
+      });
+    } catch {
+      // Compression is an optimisation, never a gate: send the original.
+    }
+    const id = photoId ?? `new:${crypto.randomUUID()}`;
+    const preview = URL.createObjectURL(upload);
+    reportPhotoPreviewUrls.current.push(preview);
+    setReportPhotoFiles((current) => ({ ...current, [id]: { file: upload, preview } }));
+    if (!photoId) setReportEditDraft((current) => current ? {
+      ...current, photos: [...current.photos, { id, isNew: true, label: "", assetId: null }],
+    } : current);
+    setReportFeedback(null);
   }
 
   function updateReportPhotoLabel(photoId: string, label: string) {
@@ -498,7 +571,7 @@ export function AppointmentDetailClient({
       const form = new FormData();
       form.set("report", JSON.stringify(reportEditDraft));
       for (const [photoId, replacement] of Object.entries(reportPhotoFiles)) {
-        form.set(`photo:${photoId}`, replacement.file);
+        if (reportEditDraft.photos.some((photo) => photo.id === photoId)) form.set(`photo:${photoId}`, replacement.file);
       }
       const response = await fetch(`/api/appointments/${appointmentId}/report`, {
         method: "PATCH",
@@ -509,6 +582,7 @@ export function AppointmentDetailClient({
 
       await load();
       setReportEditDraft(null);
+      clearReportPhotoPreviews();
       setReportPhotoFiles({});
       setReportFeedback({
         tone: data.warning ? "warning" : "success",
@@ -1030,6 +1104,7 @@ export function AppointmentDetailClient({
                       <span className="text-xs font-semibold text-gray-600">Technician</span>
                       <input
                         required
+                        disabled={reportSaving}
                         maxLength={120}
                         value={reportEditDraft.technicianName}
                         onChange={(event) => setReportEditDraft((current) => current ? {
@@ -1043,6 +1118,7 @@ export function AppointmentDetailClient({
                       <span className="text-xs font-semibold text-gray-600">Client signed</span>
                       <input
                         required
+                        disabled={reportSaving}
                         maxLength={120}
                         value={reportEditDraft.clientName}
                         onChange={(event) => setReportEditDraft((current) => current ? {
@@ -1057,6 +1133,7 @@ export function AppointmentDetailClient({
                       <input
                         type="date"
                         required
+                        disabled={reportSaving}
                         value={reportEditDraft.reportDate}
                         onChange={(event) => setReportEditDraft((current) => current ? {
                           ...current,
@@ -1067,53 +1144,62 @@ export function AppointmentDetailClient({
                     </label>
                   </div>
 
-                  {reportEditDraft.assets.length > 0 && (
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">After-task remarks</p>
-                        <p className="mt-0.5 text-xs text-gray-400">Update the technician finding for each asset.</p>
-                      </div>
-                      {reportEditDraft.assets.map((draftAsset, index) => {
-                        const asset = appt.assets.find((item) => item.id === draftAsset.id);
-                        return (
-                          <label key={draftAsset.id} className="block space-y-1.5 rounded-lg border border-gray-200 bg-white p-3">
-                            <span className="text-xs font-semibold text-gray-700">
-                              Asset {String(index + 1).padStart(2, "0")} · {asset?.acType ? `${asset.acType}: ` : ""}{asset?.label || "Asset"}
-                            </span>
-                            <textarea
-                              rows={3}
-                              maxLength={4000}
-                              value={draftAsset.technicianRemark}
-                              onChange={(event) => updateReportAssetRemark(draftAsset.id, event.target.value)}
-                              placeholder="Technician finding or work completed"
-                              className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-[#F2B705] focus:ring-2 focus:ring-[#F2B705]/30"
-                            />
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <ReportAssetEditor
+                    assets={reportEditDraft.assets}
+                    categories={categories}
+                    disabled={reportSaving}
+                    onChange={updateReportAsset}
+                    onRemove={removeReportAsset}
+                    onAdd={() => setReportEditDraft((current) => current ? {
+                      ...current, assets: [...current.assets, {
+                        id: `new:${crypto.randomUUID()}`, isNew: true, label: "", acType: "",
+                        jobCategoryId: "", unitPrice: "0", billingType: "CHARGEABLE",
+                        remarks: "", technicianRemark: "", additionalAddress: "",
+                        propertyType: appt.customer.propertyType ?? "", workLocationAddress: appt.locationAddress,
+                      }],
+                    } : current)}
+                  />
 
-                  {reportEditDraft.photos.length > 0 && (
                     <div className="space-y-3">
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Report photos</p>
-                        <p className="mt-0.5 text-xs text-gray-400">Replace photos or edit their labels, then Save report to update the PDF. JPG, PNG or WebP, up to 10 MB per photo.</p>
+                        <p className="mt-0.5 text-xs text-gray-400">Add, remove or replace photos and edit their labels. Changes apply when you Save report. JPG, PNG or WebP, up to 10 MB per photo.</p>
                       </div>
+                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[#F2B705]/40 bg-white px-3 py-2 text-xs font-semibold text-[#151513]">
+                        <Camera className="h-4 w-4" /> Add photos
+                        <input type="file" multiple accept="image/jpeg,image/png,image/webp" aria-label="Add report photos" disabled={reportSaving} className="sr-only" onChange={(event) => {
+                          const files = Array.from(event.target.files ?? []);
+                          event.target.value = "";
+                          files.forEach((file) => selectReportPhoto(file));
+                        }} />
+                      </label>
+                      {!reportEditDraft.photos.length && <p className="text-sm text-gray-500">No report photos.</p>}
                       <div className="grid gap-3 sm:grid-cols-2">
                         {reportEditDraft.photos.map((draftPhoto, index) => {
                           const photo = appt.servicePhotos.find((item) => item.id === draftPhoto.id);
                           return (
                             <div key={draftPhoto.id} className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-2.5">
-                              {photo && (
+                              {(photo || reportPhotoFiles[draftPhoto.id]) && (
                                 <img
-                                  src={reportPhotoFiles[draftPhoto.id]?.preview ?? normalizeUploadUrl(photo.photoUrl)}
+                                  src={reportPhotoFiles[draftPhoto.id]?.preview ?? normalizeUploadUrl(photo!.photoUrl)}
                                   alt="Evidence preview"
                                   className="h-20 w-20 shrink-0 rounded-lg border border-gray-200 object-cover"
                                 />
                               )}
                               <span className="min-w-0 flex-1 space-y-1">
                                 <span className="block text-[11px] font-medium text-gray-500">Photo {index + 1}</span>
+                                <select
+                                  aria-label={`Photo ${index + 1} asset`}
+                                  disabled={reportSaving}
+                                  value={draftPhoto.assetId ?? ""}
+                                  onChange={(event) => setReportEditDraft((current) => current ? {
+                                    ...current, photos: current.photos.map((item) => item.id === draftPhoto.id ? { ...item, assetId: event.target.value || null } : item),
+                                  } : current)}
+                                  className="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs"
+                                >
+                                  <option value="">General report photo</option>
+                                  {reportEditDraft.assets.map((asset, assetIndex) => <option key={asset.id} value={asset.id}>Asset {assetIndex + 1}: {asset.label || asset.acType || "Asset"}</option>)}
+                                </select>
                                 <input
                                   aria-label={`Photo ${index + 1} name`}
                                   disabled={reportSaving}
@@ -1123,7 +1209,7 @@ export function AppointmentDetailClient({
                                   placeholder={`Photo ${index + 1}`}
                                   className="w-full rounded-md border border-gray-300 px-2.5 py-1.5 text-sm text-gray-800 outline-none transition focus:border-[#F2B705] focus:ring-2 focus:ring-[#F2B705]/30"
                                 />
-                                <label className={`inline-flex items-center gap-1.5 rounded-md border border-teal-200 px-2.5 py-1.5 text-xs font-semibold text-teal-800 ${reportSaving ? "opacity-50" : "cursor-pointer hover:bg-teal-50"}`}>
+                                <label className={`inline-flex items-center gap-1.5 rounded-md border border-[#F2B705]/40 px-2.5 py-1.5 text-xs font-semibold text-[#151513] ${reportSaving ? "opacity-50" : "cursor-pointer hover:bg-[#F2B705]/10"}`}>
                                   <Camera className="h-3.5 w-3.5" /> Replace photo
                                   <input
                                     type="file"
@@ -1135,31 +1221,28 @@ export function AppointmentDetailClient({
                                       const file = event.target.files?.[0];
                                       event.target.value = "";
                                       if (!file) return;
-                                      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024 || !file.size) {
-                                        setReportFeedback({ tone: "error", message: "Choose a JPG, PNG or WebP photo up to 10 MB." });
-                                        return;
-                                      }
-                                      const preview = URL.createObjectURL(file);
-                                      reportPhotoPreviewUrls.current.push(preview);
-                                      setReportPhotoFiles((current) => ({ ...current, [draftPhoto.id]: { file, preview } }));
-                                      setReportFeedback(null);
+                                      selectReportPhoto(file, draftPhoto.id);
                                     }}
                                   />
                                 </label>
-                                {reportPhotoFiles[draftPhoto.id] && <span className="block text-xs text-teal-700">New photo selected — save report to upload.</span>}
+                                <button type="button" disabled={reportSaving} onClick={() => removeReportPhoto(draftPhoto.id)} className="ml-2 text-xs font-semibold text-red-600">Remove photo</button>
+                                {reportPhotoFiles[draftPhoto.id] && <span className="block text-xs text-[#151513]">New photo selected — save report to upload.</span>}
                               </span>
                             </div>
                           );
                         })}
                       </div>
                     </div>
-                  )}
 
                   <div className="flex flex-wrap justify-end gap-2 border-t border-[#F2B705]/30 pt-4">
+                    {(reportEditDraft.deletedAssetIds.length > 0 || reportEditDraft.deletedPhotoIds.length > 0) && (
+                      <p className="w-full text-xs text-red-700">Will remove {reportEditDraft.deletedAssetIds.length} asset(s) and {reportEditDraft.deletedPhotoIds.length} photo(s) when saved. Cancel discards these changes.</p>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
                         setReportEditDraft(null);
+                        clearReportPhotoPreviews();
                         setReportPhotoFiles({});
                         setReportFeedback(null);
                       }}

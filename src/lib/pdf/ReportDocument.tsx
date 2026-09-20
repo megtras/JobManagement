@@ -56,6 +56,7 @@ interface Props {
   appointmentDate: string;
   appointmentTime: string;
   assets: Asset[];
+  generalPhotos?: { src: string; label: string }[];
   billingType: "CHARGEABLE" | "WARRANTY";
   warrantyNote?: string | null;
   totalPrice: number;
@@ -170,6 +171,20 @@ export function ReportDocument(props: Props) {
             );
           })}
         </View>
+
+        {!!props.generalPhotos?.length && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>General Report Photos</Text>
+            <View style={styles.photoRow}>
+              {props.generalPhotos.map((photo, index) => (
+                <View key={index} style={styles.photoCell} wrap={false}>
+                  <Image src={photo.src} style={styles.photo} />
+                  <Text style={styles.photoCaption}>{photo.label || `Photo ${index + 1}`}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Total */}
         <View style={{ ...styles.section, flexDirection: "row", justifyContent: "flex-end" }}>

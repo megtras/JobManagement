@@ -6,6 +6,7 @@ import { regenerateServiceReportPdf } from "@/lib/pdf/regenerate-service-report"
 import { randomUUID } from "crypto";
 import { uploadPublicUrl } from "@/lib/upload-urls";
 import { deleteUploadByUrl, putUpload } from "@/lib/storage";
+import { calculateChargeableAssetTotal, isTroubleshootCategoryName } from "@/lib/appointment-pricing";
 
 const REPORT_EDITOR_ROLES = new Set(["ADMIN", "MANAGER", "SUPERVISOR"]);
 
@@ -15,6 +16,8 @@ interface ReportEditBody {
   reportDate?: unknown;
   assets?: unknown;
   photos?: unknown;
+  deletedAssetIds?: unknown;
+  deletedPhotoIds?: unknown;
 }
 
 function requiredText(value: unknown, field: string, maxLength = 120) {
@@ -56,6 +59,7 @@ export async function PATCH(
   }
 
   const { role, branchId } = session.user;
+  if (role !== "SUPERVISOR" && !branchId) return NextResponse.json({ error: "Branch access required." }, { status: 403 });
   const appt = await prisma.appointment.findFirst({
     where: {
       id,
@@ -65,8 +69,8 @@ export async function PATCH(
       id: true,
       status: true,
       report: { select: { pdfUrl: true } },
-      assets: { select: { id: true } },
-      servicePhotos: { select: { id: true, type: true } },
+      assets: true,
+      servicePhotos: { select: { id: true, type: true, assetId: true } },
     },
   });
 
@@ -97,6 +101,7 @@ export async function PATCH(
     const technicianName = requiredText(body.technicianName, "Technician name");
     const clientName = requiredText(body.clientName, "Client name");
     const reportDate = parseReportDate(body.reportDate);
+    if ((body.assets !== undefined && !Array.isArray(body.assets)) || (body.photos !== undefined && !Array.isArray(body.photos))) throw new Error("Invalid report items.");
     const rawAssets = Array.isArray(body.assets) ? body.assets : [];
     const rawPhotos = Array.isArray(body.photos) ? body.photos : [];
 
@@ -110,34 +115,74 @@ export async function PATCH(
     );
     const seenAssetIds = new Set<string>();
     const seenPhotoIds = new Set<string>();
+    function deletedIds(value: unknown, allowed: Set<string>) {
+      if (value === undefined) return [];
+      if (!Array.isArray(value) || value.length > 500) throw new Error("Invalid deleted items.");
+      const ids = value.map((id) => requiredText(id, "Deleted item id", 100));
+      if (new Set(ids).size !== ids.length || ids.some((id) => !allowed.has(id))) throw new Error("Invalid deleted items.");
+      return ids;
+    }
+    const deletedAssetIds = deletedIds(body.deletedAssetIds, allowedAssetIds);
+    const deletedPhotoIds = deletedIds(body.deletedPhotoIds, allowedPhotoIds);
 
     const assets = rawAssets.map((item) => {
       if (!item || typeof item !== "object") throw new Error("Invalid asset report item.");
-      const value = item as { id?: unknown; technicianRemark?: unknown };
+      const value = item as Record<string, unknown>;
       const assetId = requiredText(value.id, "Asset id", 100);
-      if (!allowedAssetIds.has(assetId) || seenAssetIds.has(assetId)) {
+      const isNew = value.isNew === true;
+      if ((isNew ? !assetId.startsWith("new:") : !allowedAssetIds.has(assetId)) || seenAssetIds.has(assetId) || deletedAssetIds.includes(assetId)) {
         throw new Error("Invalid asset report item.");
       }
       seenAssetIds.add(assetId);
+      const original = appt.assets.find((asset) => asset.id === assetId);
+      const text = (key: string, fallback: string | null | undefined, max = 4000) =>
+        optionalText(value[key] === undefined ? fallback ?? "" : value[key], key, max);
+      if (value.unitPrice !== undefined && (typeof value.unitPrice !== "number" && typeof value.unitPrice !== "string" || typeof value.unitPrice === "string" && !value.unitPrice.trim())) throw new Error("Invalid asset price.");
+      const price = value.unitPrice === undefined ? Number(original?.unitPrice ?? 0) : Number(value.unitPrice);
+      if (!Number.isFinite(price) || price < 0 || price > 99999999.99 || Math.abs(price * 100 - Math.round(price * 100)) > 0.00001) throw new Error("Invalid asset price.");
+      const billingType = value.billingType ?? original?.billingType ?? "CHARGEABLE";
+      if (billingType !== "CHARGEABLE" && billingType !== "WARRANTY") throw new Error("Invalid asset billing type.");
       return {
         id: assetId,
-        technicianRemark: optionalText(value.technicianRemark ?? "", "Technician remark", 4000),
+        isNew,
+        label: text("label", original?.label, 200),
+        acType: text("acType", original?.acType, 120),
+        jobCategoryId: text("jobCategoryId", original?.jobCategoryId, 100) || null,
+        unitPrice: price,
+        billingType,
+        remarks: text("remarks", original?.remarks),
+        additionalAddress: text("additionalAddress", original?.additionalAddress),
+        propertyType: text("propertyType", original?.propertyType, 120),
+        workLocationAddress: text("workLocationAddress", original?.workLocationAddress),
+        technicianRemark: text("technicianRemark", original?.technicianRemark),
       };
     });
+    if (appt.assets.length - deletedAssetIds.length + assets.filter((asset) => asset.isNew).length > 200) throw new Error("Too many assets.");
+    const categoryIds = [...new Set(assets.map((asset) => asset.jobCategoryId).filter((id): id is string => !!id))];
+    const categories = categoryIds.length ? await prisma.jobCategory.findMany({ where: { id: { in: categoryIds } }, select: { id: true, name: true } }) : [];
+    if (categories.length !== categoryIds.length) throw new Error("Invalid job category.");
+    const finalAssetIds = new Set([...allowedAssetIds, ...assets.map((asset) => asset.id)].filter((id) => !deletedAssetIds.includes(id)));
 
     const photos = rawPhotos.map((item) => {
       if (!item || typeof item !== "object") throw new Error("Invalid report photo.");
-      const value = item as { id?: unknown; label?: unknown };
+      const value = item as { id?: unknown; label?: unknown; isNew?: unknown; assetId?: unknown };
       const photoId = requiredText(value.id, "Photo id", 100);
-      if (!allowedPhotoIds.has(photoId) || seenPhotoIds.has(photoId)) {
+      const isNew = value.isNew === true;
+      if ((isNew ? !photoId.startsWith("new:") : !allowedPhotoIds.has(photoId)) || seenPhotoIds.has(photoId) || deletedPhotoIds.includes(photoId)) {
         throw new Error("Invalid report photo.");
       }
       seenPhotoIds.add(photoId);
+      let assetId = value.assetId === undefined ? appt.servicePhotos.find((photo) => photo.id === photoId)?.assetId ?? null : value.assetId;
+      if (typeof assetId === "string" && deletedAssetIds.includes(assetId)) assetId = null;
+      if (assetId !== null && (typeof assetId !== "string" || !finalAssetIds.has(assetId))) throw new Error("Invalid photo asset.");
       return {
         id: photoId,
+        isNew,
+        assetId,
         label: optionalText(value.label ?? "", "Photo name", 160),
       };
     });
+    if (allowedPhotoIds.size - deletedPhotoIds.length + photos.filter((photo) => photo.isNew).length > 500) throw new Error("Too many report photos.");
 
     // Replacement images arrive as multipart entries keyed "photo:<photoId>".
     // Upstream resized these with sharp; sharp cannot run on Workers, so the
@@ -163,25 +208,56 @@ export async function PATCH(
       uploadedUrls.push(url);
       replacementUrls.set(photoId, url);
     }
+    if (photos.some((photo) => photo.isNew && !replacementUrls.has(photo.id))) throw new Error("Choose an image for every new photo.");
 
-    // D1 has no interactive transactions, so these run in sequence. Order
-    // matters: the report row first, then assets, then photos, so a failure
-    // part-way leaves the report readable rather than half-relabelled.
+    // D1 has no interactive transactions, so what upstream ran inside one runs
+    // in sequence here. Order matters: deletions first, then asset writes, then
+    // the recomputed total, then photos - so a failure part-way never leaves a
+    // photo pointing at an asset row that has already gone.
     await prisma.report.update({
       where: { appointmentId: id },
       data: { technicianName, clientName, reportDate },
     });
+    if (deletedPhotoIds.length) await prisma.servicePhoto.deleteMany({ where: { appointmentId: id, id: { in: deletedPhotoIds }, type: "EVIDENCE" } });
+    if (deletedAssetIds.length) {
+      await prisma.servicePhoto.updateMany({ where: { appointmentId: id, assetId: { in: deletedAssetIds } }, data: { assetId: null } });
+      await prisma.appointmentAsset.deleteMany({ where: { appointmentId: id, id: { in: deletedAssetIds } } });
+    }
+    const assetIds = new Map<string, string>();
     for (const asset of assets) {
-      await prisma.appointmentAsset.update({
-        where: { id: asset.id },
-        data: { technicianRemark: asset.technicianRemark || null },
-      });
+      const data = {
+        label: asset.label, acType: asset.acType, jobCategoryId: asset.jobCategoryId,
+        unitPrice: asset.unitPrice, billingType: asset.billingType as "CHARGEABLE" | "WARRANTY",
+        isTroubleshoot: isTroubleshootCategoryName(categories.find((category) => category.id === asset.jobCategoryId)?.name),
+        remarks: asset.remarks || null, technicianRemark: asset.technicianRemark || null,
+        additionalAddress: asset.additionalAddress || null, propertyType: asset.propertyType,
+        workLocationAddress: asset.workLocationAddress,
+        ...(appt.assets.find((original) => original.id === asset.id)?.workLocationAddress !== asset.workLocationAddress
+          ? { workLocationLat: null, workLocationLng: null } : {}),
+      };
+      if (asset.isNew) {
+        const created = await prisma.appointmentAsset.create({ data: { ...data, appointmentId: id } });
+        assetIds.set(asset.id, created.id);
+      } else {
+        await prisma.appointmentAsset.update({ where: { id: asset.id }, data });
+      }
+    }
+    if (deletedAssetIds.length || assets.some((asset) => asset.isNew || asset.unitPrice !== Number(appt.assets.find((original) => original.id === asset.id)?.unitPrice) || asset.billingType !== appt.assets.find((original) => original.id === asset.id)?.billingType)) {
+      const remaining = await prisma.appointmentAsset.findMany({ where: { appointmentId: id } });
+      const totalPrice = Math.round(calculateChargeableAssetTotal(remaining) * 100) / 100;
+      if (totalPrice > 99999999.99) throw new Error("Total price is too large.");
+      await prisma.appointment.update({ where: { id }, data: { totalPrice } });
     }
     for (const photo of photos) {
-      await prisma.servicePhoto.update({
-        where: { id: photo.id },
-        data: { label: photo.label, ...(replacementUrls.has(photo.id) ? { photoUrl: replacementUrls.get(photo.id) } : {}) },
-      });
+      const assetId = photo.assetId ? assetIds.get(photo.assetId) ?? photo.assetId : null;
+      if (photo.isNew) {
+        await prisma.servicePhoto.create({ data: { appointmentId: id, assetId, type: "EVIDENCE", label: photo.label, photoUrl: replacementUrls.get(photo.id)! } });
+      } else {
+        await prisma.servicePhoto.update({
+          where: { id: photo.id },
+          data: { label: photo.label, assetId, ...(replacementUrls.has(photo.id) ? { photoUrl: replacementUrls.get(photo.id) } : {}) },
+        });
+      }
     }
     committed = true;
 

@@ -49,7 +49,6 @@ export async function regenerateServiceReportPdf(appointmentId: string) {
     evidenceByAsset.set(photo.assetId, photos);
   }
 
-  const firstAssetId = appt.assets[0]?.id ?? null;
   const assetsWithPhotos = appt.assets.map((asset) => ({
     ...asset,
     jobCategoryName: asset.jobCategory?.name ?? null,
@@ -57,7 +56,7 @@ export async function regenerateServiceReportPdf(appointmentId: string) {
     billingType: asset.billingType ?? null,
     remarks: asset.remarks ?? null,
     technicianRemark: asset.technicianRemark ?? null,
-    photos: evidenceByAsset.get(asset.id) ?? (asset.id === firstAssetId ? orphanEvidence : []),
+    photos: evidenceByAsset.get(asset.id) ?? [],
   }));
 
   const reportDate = new Date(appt.report.reportDate).toLocaleDateString("en-MY", {
@@ -78,6 +77,7 @@ export async function regenerateServiceReportPdf(appointmentId: string) {
       appointmentDate: new Date(appt.date).toLocaleDateString("en-MY"),
       appointmentTime: appt.time,
       assets: assetsWithPhotos,
+      generalPhotos: orphanEvidence,
       billingType: appt.billingType,
       warrantyNote: appt.warrantyNote,
       totalPrice: parseFloat(appt.totalPrice.toString()),

@@ -26,9 +26,12 @@ export default async function AppointmentDetailPage({
   const canManage = role === "MANAGER" || role === "SUPERVISOR";
 
   // Data needed to create a sub job inline (managers/supervisors only).
-  const [rawCategories, rawCustomers, rawAppts, rawTeams] = canManage
-    ? await Promise.all([getJobCategories(), getCustomers(), getAppointments(), getTeams()])
-    : [[], [], [], []];
+  const [rawCategories, rawCustomers, rawAppts, rawTeams] = await Promise.all([
+    canEditReport ? getJobCategories() : [],
+    canManage ? getCustomers() : [],
+    canManage ? getAppointments() : [],
+    canManage ? getTeams() : [],
+  ]);
 
   const categories = rawCategories.map((c) => ({ id: c.id, name: c.name, price: parseFloat(c.price.toString()) }));
   const customers = rawCustomers.map((c) => ({
